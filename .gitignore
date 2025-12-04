@@ -24,3 +24,4 @@ Homestead.yaml
 Thumbs.db
 /draft.yaml
 /.blueprint
+/.ddev/docker-compose.proxy.yaml
