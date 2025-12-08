@@ -1,40 +1,209 @@
 # Laravel 12 REST API Starter
 
-A starter repo with default configuration to quickly start a project to develop REST API endpoints.
+A production-ready Laravel 12 REST API starter with automatic OpenAPI documentation, advanced query capabilities, comprehensive testing, and modern development tools.
 
-## Requirements
-- Laravel 12
-- PHP 8.4
-- Composer 2.9
-- MySQL/Mariadb
-- Apache/Nginx
+## Table of Contents
 
-## Installed Packages
+- [Features](#features)
+- [Requirements](#requirements)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+  - [Development Environment Options](#development-environment-options)
+  - [Local Installation](#local-installation)
+  - [Environment Variables](#environment-variables)
+- [Development](#development)
+  - [Workflow to Add New Resource](#workflow-to-add-new-resource)
+  - [Useful Commands](#useful-commands)
+  - [Code Style](#code-style)
+  - [API Usage & Examples](#api-usage--examples)
+  - [Authentication & Authorization](#authentication--authorization)
+  - [Testing Strategy](#testing-strategy)
+- [Deployment](#deployment)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
 
-### Core Packages
-- **Laravel Framework 12** - Modern PHP framework
-- **Filament 4** - Admin panel and form builder
-- **Laravel Telescope 5** - Debugging and monitoring tool
+---
 
-### API & Documentation
-- **Dedoc Scramble** - Automatic OpenAPI documentation generation
-- **Spatie Laravel Data** - Type-safe data transfer objects
-- **Spatie Laravel Query Builder** - Advanced API query capabilities (filtering, sorting, includes)
+## Features
 
-### Authentication & Authorization
-- **Spatie Laravel Permission** - Role and permission management
+### Core API Features
+
+- **RESTful API** - Standard REST conventions for all resources (Posts, Comments, Tags)
+- **Automatic OpenAPI Documentation** - Interactive docs with "Try It" feature at `/docs/api`
+- **Advanced Querying** - Filter, sort, include relationships, select specific fields
+- **Type-Safe DTOs** - Spatie Laravel Data for structured data transfer
+- **Form Request Validation** - Centralized, reusable validation logic
+- **API Resources** - Consistent response transformation
+- **Role & Permission Management** - Spatie Laravel Permission integration
+
+### Developer Experience
+
+- **Laravel Telescope** - Debugging and monitoring dashboard at `/telescope`
+- **Laravel Debugbar** - Development debugging toolbar
+- **IDE Helpers** - Full IDE autocompletion support
+- **Laravel Pint** - Automatic code formatting (PSR-12)
+- **Pest v4 Testing** - Modern testing framework with browser testing
+- **Hot Module Replacement** - Vite for fast frontend development
+- **Real-time Logs** - Laravel Pail for log viewing
+- **Blueprint Integration** - Generate resources from YAML definitions
 
 ### Development Tools
-- **Laravel Pint** - Code style fixer
-- **Pest 4** - Testing framework
-- **Laravel IDE Helper** - IDE autocompletion support
-- **Laravel Debugbar** - Development debugging toolbar
-- **Laravel Sail** - Docker development environment
-- **Laravel Pail** - Log viewer
-- **Blueprint** - Model and migration generator
-- **Nimbus** - Additional development utilities
 
-## Local Installation
+- **Multiple Dev Environments** - DDEV, Laravel Sail, or traditional setup
+- **Factory & Seeders** - Easy test data generation
+- **Queue Management** - Background job processing
+- **Database Migrations** - Version-controlled database schema
+
+### Query Capabilities
+
+Using Spatie Laravel Query Builder:
+
+- **Includes** - Dynamically eager load relationships (`?include=user,comments`)
+- **Filters** - Filter by any attribute (`?filter[status]=published`)
+- **Sorting** - Sort by any field (`?sort=-created_at`)
+- **Field Selection** - Request only needed fields (`?fields=id,title`)
+- **Counts & Exists** - Include relationship counts
+
+---
+
+## Requirements
+
+- **PHP** 8.4+
+- **Composer** 2.9+
+- **Database** MySQL/MariaDB or PostgreSQL
+- **Web Server** Apache/Nginx (or use built-in dev server)
+- **Node.js** & NPM (for frontend assets)
+
+**Optional:**
+- Docker (for DDEV or Sail)
+- Redis (recommended for production)
+- Supervisor (for queue workers in production)
+
+---
+
+## Project Structure
+
+```
+laravel12-api/
+├── app/
+│   ├── Console/          # Artisan commands (auto-registered in Laravel 12)
+│   ├── Data/            # Spatie Data DTOs for type-safe data handling
+│   ├── Enums/           # PHP Enums with string backing (PostStatus, etc.)
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   │   └── Api/     # RESTful API controllers
+│   │   ├── Requests/
+│   │   │   └── Api/     # Form Request validation classes
+│   │   └── Resources/
+│   │       └── Api/     # API Resources & Collections
+│   ├── Models/          # Eloquent models with relationships
+│   ├── Providers/       # Service providers
+│   └── Traits/          # Reusable traits (HasUserId, EnumArray)
+├── bootstrap/
+│   ├── app.php          # Application configuration (Laravel 12 style)
+│   └── providers.php    # Service provider registration
+├── config/              # Configuration files
+├── database/
+│   ├── factories/       # Model factories for testing
+│   ├── migrations/      # Database migrations
+│   └── seeders/        # Database seeders
+├── public/             # Public assets and index.php
+├── resources/
+│   ├── views/          # Blade templates
+│   ├── css/            # Frontend CSS
+│   └── js/             # Frontend JavaScript
+├── routes/
+│   ├── api.php         # API routes (prefixed with /api)
+│   ├── web.php         # Web routes
+│   └── console.php     # Console routes
+├── storage/            # Application storage (logs, cache, uploads)
+├── tests/
+│   ├── Feature/        # Feature tests for controllers, APIs
+│   ├── Unit/          # Unit tests for models, services
+│   └── Browser/       # Browser tests (Pest v4)
+└── vendor/            # Composer dependencies
+```
+
+### Key Architectural Patterns
+
+- **Laravel 12 Structure**: No `app/Http/Middleware/` or `app/Console/Kernel.php`
+- **Data Layer**: Spatie Data objects for type-safe DTOs with automatic validation
+- **API Resources**: Transform Eloquent models to consistent JSON responses
+- **Form Requests**: Centralized validation logic with array-based rules
+- **Traits**: Shared behaviors (e.g., `HasUserId` auto-assigns authenticated user)
+
+---
+
+## Getting Started
+
+### Development Environment Options
+
+Choose the development environment that works best for you:
+
+#### Option 1: DDEV (Recommended for Docker)
+
+This project includes DDEV configuration for containerized development.
+
+```bash
+# Start DDEV
+ddev start
+
+# Run composer commands
+ddev composer install
+
+# Run artisan commands
+ddev artisan migrate
+ddev artisan test
+
+# Access the application
+ddev launch
+```
+
+**DDEV provides:**
+- PHP 8.4 environment
+- MySQL/MariaDB database
+- Automatic HTTPS
+- MailHog for email testing
+- Adminer for database management
+
+#### Option 2: Laravel Sail
+
+Laravel Sail is available for Docker-based development.
+
+```bash
+# Install dependencies
+docker run --rm \
+    -u "$(id -u):$(id -g)" \
+    -v $(pwd):/var/www/html \
+    -w /var/www/html \
+    laravelsail/php84-composer:latest \
+    composer install
+
+# Start Sail
+./vendor/bin/sail up -d
+
+# Run artisan commands
+./vendor/bin/sail artisan migrate
+./vendor/bin/sail artisan test
+
+# Stop Sail
+./vendor/bin/sail down
+```
+
+#### Option 3: Traditional Local Setup
+
+Requirements:
+- PHP 8.4+
+- Composer 2.9+
+- MySQL/MariaDB
+- Node.js & NPM
+
+Follow the [Local Installation](#local-installation) section below.
+
+---
+
+### Local Installation
 
 1. **Clone the repository**
    ```bash
@@ -42,7 +211,7 @@ A starter repo with default configuration to quickly start a project to develop 
    cd laravel12-api
    ```
 
-2. **Run setup script**
+2. **Run setup script** (recommended)
    ```bash
    composer run setup
    ```
@@ -57,12 +226,12 @@ A starter repo with default configuration to quickly start a project to develop 
    - Update `.env` file with your database credentials
    - Set `DB_CONNECTION`, `DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`
 
-4. **Run migrations (if not already run)**
+4. **Run migrations** (if not already run)
    ```bash
    php artisan migrate
    ```
 
-5. **Seed database (optional)**
+5. **Seed database** (optional)
    ```bash
    php artisan db:seed
    ```
@@ -74,90 +243,199 @@ A starter repo with default configuration to quickly start a project to develop 
    This starts the Laravel server, queue worker, log viewer, and Vite dev server concurrently.
 
 7. **Access the application**
-   - API: `http://localhost:8000/api`
-   - API Documentation: `http://localhost:8000/docs/api`
-   - Admin Panel: `http://localhost:8000/admin`
-   - Telescope: `http://localhost:8000/telescope`
+   - **API**: http://localhost:8000/api
+   - **API Documentation**: http://localhost:8000/docs/api
+   - **Admin Panel**: http://localhost:8000/admin
+   - **Telescope**: http://localhost:8000/telescope
+   - **Health Check**: http://localhost:8000/up
 
-## Workflow to Add New Resource
+---
 
-This project follows a structured approach to creating API resources. Here's the recommended workflow:
+### Environment Variables
 
-1. **Generate Model with migrations, factory, and seeder**
-   ```bash
-   php artisan make:model Post --migration --factory --seed --no-interaction
-   ```
+#### Required Variables
 
-2. **Update the migration file**
-   - Define table schema in `database/migrations/`
-   - Run migration: `php artisan migrate`
+```env
+# Application
+APP_NAME=Laravel              # Application name
+APP_ENV=local                 # Environment (local, staging, production)
+APP_KEY=                      # Generated by `php artisan key:generate`
+APP_DEBUG=true               # Debug mode (false in production)
+APP_URL=http://localhost     # Application URL
 
-3. **Update Model**
-   - Define `$fillable` attributes
-   - Add relationships with return type hints (`HasMany`, `BelongsTo`, etc.)
-   - Define `casts()` method for type casting
-   - Add traits if needed (`HasFactory`, `HasUserId`)
+# Database
+DB_CONNECTION=mysql          # Database driver (mysql, pgsql, sqlite)
+DB_HOST=127.0.0.1           # Database host
+DB_PORT=3306                # Database port
+DB_DATABASE=laravel         # Database name
+DB_USERNAME=root            # Database username
+DB_PASSWORD=                # Database password
+```
 
-4. **Generate API Controller**
-   ```bash
-   php artisan make:controller Api/PostController --api --no-interaction
-   ```
-   - Implement CRUD methods (index, store, show, update, destroy)
-   - Use Form Requests for validation
-   - Return API Resources
+#### Optional Variables
 
-5. **Generate Form Requests**
-   ```bash
-   php artisan make:request Api/PostStoreRequest --no-interaction
-   php artisan make:request Api/PostUpdateRequest --no-interaction
-   ```
-   - Define validation rules (use array format)
-   - Set `authorize()` method appropriately
+```env
+# Queue
+QUEUE_CONNECTION=database    # Queue driver (sync, database, redis, sqs)
 
-6. **Generate API Resources**
-   ```bash
-   php artisan make:resource Api/PostResource --no-interaction
-   php artisan make:resource Api/PostCollection --no-interaction
-   ```
-   - Define response structure in `toArray()` method
-   - Use `whenLoaded()` for relationships
+# Cache
+CACHE_STORE=database        # Cache driver (file, database, redis)
 
-7. **Create Data Object (optional but recommended)**
-   ```bash
-   php artisan make:class Data/PostData --no-interaction
-   ```
-   - Extend `Spatie\LaravelData\Data`
-   - Define typed properties with attributes
+# Session
+SESSION_DRIVER=database     # Session storage (file, database, redis)
+SESSION_LIFETIME=120        # Session lifetime in minutes
 
-8. **Register API routes**
-   - Add resource route in `routes/api.php`:
-     ```php
-     Route::apiResource('posts', App\Http\Controllers\Api\PostController::class);
-     ```
+# Mail
+MAIL_MAILER=log            # Mail driver (smtp, log, mailgun, etc.)
+MAIL_HOST=127.0.0.1
+MAIL_PORT=2525
+MAIL_FROM_ADDRESS=hello@example.com
 
-9. **Update Factory**
-   - Define realistic fake data in `database/factories/PostFactory.php`
+# Logging
+LOG_CHANNEL=stack          # Log channel
+LOG_LEVEL=debug           # Log level (debug, info, warning, error)
 
-10. **Create Tests**
-    ```bash
-    php artisan make:test Feature/Http/Controllers/Api/PostControllerTest --no-interaction
-    ```
-    - Test all CRUD operations
-    - Test validation rules
-    - Use `RefreshDatabase` trait
+# API
+API_VERSION=0.0.1         # API version for documentation
+```
 
-11. **Run tests and format code**
-    ```bash
-    php artisan test --filter=PostControllerTest
-    vendor/bin/pint --dirty
-    ```
+#### Production-Specific
 
-12. **Verify API documentation**
-    - Visit `/docs/api` to see auto-generated OpenAPI documentation
+```env
+APP_ENV=production
+APP_DEBUG=false
+LOG_LEVEL=error
 
-## Useful Commands
+# Enable optimization with Redis
+CACHE_STORE=redis
+SESSION_DRIVER=redis
+QUEUE_CONNECTION=redis
+```
 
-### Development
+---
+
+## Development
+
+### Installed Packages
+
+#### Core Packages
+- **Laravel Framework 12** - Modern PHP framework
+- **Filament 4** - Admin panel and form builder
+- **Laravel Telescope 5** - Debugging and monitoring tool
+
+#### API & Documentation
+- **Dedoc Scramble** - Automatic OpenAPI documentation generation
+- **Spatie Laravel Data** - Type-safe data transfer objects
+- **Spatie Laravel Query Builder** - Advanced API query capabilities
+
+#### Authentication & Authorization
+- **Spatie Laravel Permission** - Role and permission management
+
+#### Development Tools
+- **Laravel Pint** - Code style fixer (PSR-12)
+- **Pest 4** - Modern testing framework
+- **Laravel IDE Helper** - IDE autocompletion support
+- **Laravel Debugbar** - Development debugging toolbar
+- **Laravel Sail** - Docker development environment
+- **Laravel Pail** - Real-time log viewer
+- **Blueprint** - Model and migration generator
+- **Nimbus** - Additional development utilities
+
+---
+
+### Workflow to Add New Resource
+
+This project follows a structured approach for creating API resources. Here's the recommended workflow:
+
+#### 1. Generate Model with migrations, factory, and seeder
+
+```bash
+php artisan make:model Post --migration --factory --seed --no-interaction
+```
+
+#### 2. Update the migration file
+
+- Define table schema in `database/migrations/`
+- Run migration: `php artisan migrate`
+
+#### 3. Update Model
+
+- Define `$fillable` attributes
+- Add relationships with return type hints (`HasMany`, `BelongsTo`, etc.)
+- Define `casts()` method for type casting
+- Add traits if needed (`HasFactory`, `HasUserId`)
+
+#### 4. Generate API Controller
+
+```bash
+php artisan make:controller Api/PostController --api --no-interaction
+```
+- Implement CRUD methods (index, store, show, update, destroy)
+- Use Form Requests for validation
+- Return API Resources
+
+#### 5. Generate Form Requests
+
+```bash
+php artisan make:request Api/PostStoreRequest --no-interaction
+php artisan make:request Api/PostUpdateRequest --no-interaction
+```
+- Define validation rules (use array format)
+- Set `authorize()` method appropriately
+
+#### 6. Generate API Resources
+
+```bash
+php artisan make:resource Api/PostResource --no-interaction
+php artisan make:resource Api/PostCollection --no-interaction
+```
+- Define response structure in `toArray()` method
+- Use `whenLoaded()` for relationships
+
+#### 7. Create Data Object (optional but recommended)
+
+```bash
+php artisan make:class Data/PostData --no-interaction
+```
+- Extend `Spatie\LaravelData\Data`
+- Define typed properties with attributes
+
+#### 8. Register API routes
+
+Add resource route in `routes/api.php`:
+```php
+Route::apiResource('posts', App\Http\Controllers\Api\PostController::class);
+```
+
+#### 9. Update Factory
+
+Define realistic fake data in `database/factories/PostFactory.php`
+
+#### 10. Create Tests
+
+```bash
+php artisan make:test Feature/Http/Controllers/Api/PostControllerTest --no-interaction
+```
+- Test all CRUD operations
+- Test validation rules
+- Use `RefreshDatabase` trait
+
+#### 11. Run tests and format code
+
+```bash
+php artisan test --filter=PostControllerTest
+vendor/bin/pint --dirty
+```
+
+#### 12. Verify API documentation
+
+Visit `/docs/api` to see auto-generated OpenAPI documentation
+
+---
+
+### Useful Commands
+
+#### Development
 
 ```bash
 # Start all development services (server, queue, logs, vite)
@@ -173,7 +451,7 @@ npm run dev
 npm run build
 ```
 
-### Testing
+#### Testing
 
 ```bash
 # Run all tests
@@ -182,16 +460,22 @@ composer run test
 php artisan test
 
 # Run specific test file
-php artisan test tests/Feature/ExampleTest.php
+php artisan test tests/Feature/Http/Controllers/Api/PostControllerTest.php
 
-# Run tests matching a filter
+# Filter by test name
 php artisan test --filter=testName
 
-# Run tests with coverage
+# With coverage
 php artisan test --coverage
+
+# Parallel testing
+php artisan test --parallel
+
+# Stop on failure
+php artisan test --stop-on-failure
 ```
 
-### Database
+#### Database
 
 ```bash
 # Run migrations
@@ -205,22 +489,25 @@ php artisan migrate:fresh --seed
 
 # Seed database
 php artisan db:seed
+
+# Check database connection
+php artisan db:show
 ```
 
-### Code Quality
+#### Code Quality
 
 ```bash
 # Format code with Laravel Pint
 vendor/bin/pint
 
-# Format only changed files
+# Format only changed files (recommended)
 vendor/bin/pint --dirty
 
 # Check code style without fixing
 vendor/bin/pint --test
 ```
 
-### IDE Support
+#### IDE Support
 
 ```bash
 # Generate IDE helper files
@@ -229,7 +516,7 @@ php artisan ide-helper:models
 php artisan ide-helper:meta
 ```
 
-### Debugging
+#### Debugging
 
 ```bash
 # View logs in real-time
@@ -243,9 +530,12 @@ php artisan view:clear
 
 # List all routes
 php artisan route:list
+
+# Application information
+php artisan about
 ```
 
-### Queue Management
+#### Queue Management
 
 ```bash
 # Run queue worker
@@ -253,13 +543,21 @@ php artisan queue:work
 
 # Listen to queue with auto-reload
 php artisan queue:listen
+
+# Restart queue workers
+php artisan queue:restart
+
+# Clear failed jobs
+php artisan queue:flush
 ```
 
-## Code Style
+---
 
-This project uses **Laravel Pint** for code formatting, which enforces PSR-12 coding standards with Laravel-specific conventions.
+### Code Style
 
-### Rules
+This project uses **Laravel Pint** for code formatting, enforcing PSR-12 coding standards with Laravel-specific conventions.
+
+#### Code Standards
 
 - Always use curly braces for control structures, even single-line statements
 - Use PHP 8 constructor property promotion
@@ -271,7 +569,7 @@ This project uses **Laravel Pint** for code formatting, which enforces PSR-12 co
 - Use `casts()` method for model type casting (not `$casts` property)
 - Never use `env()` directly in code - only in config files
 
-### Formatting
+#### Formatting
 
 Before committing code, always run:
 
@@ -281,7 +579,7 @@ vendor/bin/pint --dirty
 
 This ensures your code follows the project's coding standards.
 
-### Code Structure Conventions
+#### Code Structure Conventions
 
 - **Controllers**: Simple and focused, delegate to Form Requests for validation
 - **Form Requests**: Array-based validation rules with explicit return types
@@ -291,66 +589,11 @@ This ensures your code follows the project's coding standards.
 
 For comprehensive coding guidelines, see `.github/copilot-instructions.md` which contains Laravel Boost guidelines.
 
-## Git Commit and PR Templates
+---
 
-This project does not currently have custom commit or PR templates, but follows these conventions:
+### API Usage & Examples
 
-### Commit Message Guidelines
-
-Write clear, concise commit messages that follow this format:
-
-```
-type: brief description
-
-Longer explanation if needed (optional)
-```
-
-**Types:**
-- `feat:` New feature
-- `fix:` Bug fix
-- `refactor:` Code refactoring
-- `test:` Adding or updating tests
-- `docs:` Documentation changes
-- `style:` Code style/formatting changes
-- `chore:` Maintenance tasks
-
-**Examples:**
-```
-feat: add post filtering by status
-
-fix: resolve N+1 query in post index endpoint
-
-test: add validation tests for PostStoreRequest
-
-refactor: extract user assignment to HasUserId trait
-```
-
-### Pull Request Guidelines
-
-When creating a pull request:
-
-1. Ensure all tests pass (`php artisan test`)
-2. Run code formatter (`vendor/bin/pint --dirty`)
-3. Provide a clear title and description
-4. List key changes and their purpose
-5. Mention any breaking changes
-6. Reference related issues if applicable
-
-### Branch Naming
-
-- `feature/` - New features (e.g., `feature/add-post-filtering`)
-- `fix/` - Bug fixes (e.g., `fix/n-plus-one-posts`)
-- `refactor/` - Code improvements (e.g., `refactor/optimize-queries`)
-- `test/` - Test additions (e.g., `test/post-controller`)
-
-### Current Branch Structure
-
-- **main** - Production-ready code
-- **develop** - Development branch (current working branch)
-
-## API Usage & Examples
-
-### Available Endpoints
+#### Available Endpoints
 
 This API provides RESTful endpoints for the following resources:
 
@@ -365,9 +608,9 @@ Each resource supports standard CRUD operations:
 - `PUT/PATCH /api/posts/{id}` - Update a post
 - `DELETE /api/posts/{id}` - Delete a post
 
-### Example Requests
+#### Example Requests
 
-#### Get All Posts
+##### Get All Posts
 
 ```bash
 GET /api/posts
@@ -390,7 +633,7 @@ Response:
 }
 ```
 
-#### Create a New Post
+##### Create a New Post
 
 ```bash
 POST /api/posts
@@ -436,7 +679,7 @@ GET /api/posts?fields=id,title,status
 GET /api/posts?include=user&filter[status]=published&sort=-created_at
 ```
 
-### API Documentation
+#### API Documentation
 
 Interactive API documentation with "Try It" feature is available at:
 ```
@@ -449,187 +692,15 @@ This documentation is automatically generated using Scramble and includes:
 - Validation rules
 - Try-it-out functionality
 
-## Environment Variables
+---
 
-### Required Variables
+### Authentication & Authorization
 
-```env
-# Application
-APP_NAME=Laravel              # Application name
-APP_ENV=local                 # Environment (local, staging, production)
-APP_KEY=                      # Generated by `php artisan key:generate`
-APP_DEBUG=true               # Debug mode (false in production)
-APP_URL=http://localhost     # Application URL
-
-# Database
-DB_CONNECTION=mysql          # Database driver (mysql, pgsql, sqlite)
-DB_HOST=127.0.0.1           # Database host
-DB_PORT=3306                # Database port
-DB_DATABASE=laravel         # Database name
-DB_USERNAME=root            # Database username
-DB_PASSWORD=                # Database password
-```
-
-### Optional Variables
-
-```env
-# Queue
-QUEUE_CONNECTION=database    # Queue driver (sync, database, redis, sqs)
-
-# Cache
-CACHE_STORE=database        # Cache driver (file, database, redis)
-
-# Session
-SESSION_DRIVER=database     # Session storage (file, database, redis)
-SESSION_LIFETIME=120        # Session lifetime in minutes
-
-# Mail
-MAIL_MAILER=log            # Mail driver (smtp, log, mailgun, etc.)
-MAIL_HOST=127.0.0.1
-MAIL_PORT=2525
-MAIL_FROM_ADDRESS=hello@example.com
-
-# Logging
-LOG_CHANNEL=stack          # Log channel
-LOG_LEVEL=debug           # Log level (debug, info, warning, error)
-
-# API
-API_VERSION=0.0.1         # API version for documentation
-```
-
-### Production-Specific
-
-```env
-APP_ENV=production
-APP_DEBUG=false
-LOG_LEVEL=error
-
-# Enable optimization
-CACHE_STORE=redis
-SESSION_DRIVER=redis
-QUEUE_CONNECTION=redis
-```
-
-## Project Structure
-
-```
-laravel12-api/
-├── app/
-│   ├── Console/          # Artisan commands (auto-registered)
-│   ├── Data/            # Spatie Data DTOs
-│   ├── Enums/           # PHP Enums (backed by strings)
-│   ├── Http/
-│   │   ├── Controllers/
-│   │   │   └── Api/     # API controllers
-│   │   ├── Requests/
-│   │   │   └── Api/     # Form Request validation
-│   │   └── Resources/
-│   │       └── Api/     # API Resources & Collections
-│   ├── Models/          # Eloquent models
-│   ├── Providers/       # Service providers
-│   └── Traits/          # Reusable traits (HasUserId, EnumArray)
-├── bootstrap/
-│   ├── app.php          # Application configuration (Laravel 12)
-│   └── providers.php    # Service provider registration
-├── config/              # Configuration files
-├── database/
-│   ├── factories/       # Model factories
-│   ├── migrations/      # Database migrations
-│   └── seeders/        # Database seeders
-├── public/             # Public assets
-├── resources/
-│   ├── views/          # Blade templates
-│   ├── css/            # Frontend CSS
-│   └── js/             # Frontend JavaScript
-├── routes/
-│   ├── api.php         # API routes (prefixed with /api)
-│   ├── web.php         # Web routes
-│   └── console.php     # Console routes
-├── storage/            # Application storage
-├── tests/
-│   ├── Feature/        # Feature tests
-│   ├── Unit/          # Unit tests
-│   └── Browser/       # Browser tests (Pest v4)
-└── vendor/            # Composer dependencies
-```
-
-### Key Architectural Patterns
-
-- **Laravel 12 Structure**: No `app/Http/Middleware/` or `app/Console/Kernel.php`
-- **Data Layer**: Spatie Data objects for type-safe DTOs
-- **API Resources**: Transform models to API responses
-- **Form Requests**: Centralized validation logic
-- **Traits**: Shared behaviors (e.g., `HasUserId` auto-assigns authenticated user)
-
-## Development Environment Options
-
-### Option 1: DDEV (Recommended for Docker)
-
-This project includes DDEV configuration for containerized development.
-
-```bash
-# Start DDEV
-ddev start
-
-# Run composer commands
-ddev composer install
-
-# Run artisan commands
-ddev artisan migrate
-ddev artisan test
-
-# Access the application
-ddev launch
-```
-
-DDEV provides:
-- PHP 8.4 environment
-- MySQL/MariaDB database
-- Automatic HTTPS
-- MailHog for email testing
-- Adminer for database management
-
-### Option 2: Laravel Sail
-
-Laravel Sail is available for Docker-based development.
-
-```bash
-# Install dependencies
-docker run --rm \
-    -u "$(id -u):$(id -g)" \
-    -v $(pwd):/var/www/html \
-    -w /var/www/html \
-    laravelsail/php84-composer:latest \
-    composer install
-
-# Start Sail
-./vendor/bin/sail up -d
-
-# Run artisan commands
-./vendor/bin/sail artisan migrate
-./vendor/bin/sail artisan test
-
-# Stop Sail
-./vendor/bin/sail down
-```
-
-### Option 3: Traditional Local Setup
-
-Requirements:
-- PHP 8.4+
-- Composer 2.9+
-- MySQL/MariaDB
-- Node.js & NPM
-
-Follow the [Local Installation](#local-installation) section above.
-
-## Authentication & Authorization
-
-### Authentication
+#### Spatie Laravel Permission
 
 This project uses **Spatie Laravel Permission** for role and permission management.
 
-#### Setting Up Roles & Permissions
+##### Setting Up Roles & Permissions
 
 ```php
 use Spatie\Permission\Models\Role;
@@ -651,7 +722,7 @@ $editor->givePermissionTo('edit posts');
 $user->assignRole('admin');
 ```
 
-#### Protecting Routes
+##### Protecting Routes
 
 ```php
 // In routes/api.php
@@ -660,7 +731,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 });
 ```
 
-#### Checking Permissions in Controllers
+##### Checking Permissions in Controllers
 
 ```php
 public function update(Request $request, Post $post)
@@ -673,9 +744,9 @@ public function update(Request $request, Post $post)
 }
 ```
 
-### API Authentication Setup
+#### API Authentication Setup
 
-To implement API authentication:
+To implement API authentication with Laravel Sanctum:
 
 1. **Install Laravel Sanctum** (if not already installed):
    ```bash
@@ -694,7 +765,7 @@ To implement API authentication:
    curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:8000/api/posts
    ```
 
-### HasUserId Trait
+#### HasUserId Trait
 
 The `HasUserId` trait automatically assigns the authenticated user's ID when creating models:
 
@@ -709,160 +780,20 @@ class Post extends Model
 }
 ```
 
-## Troubleshooting
+---
 
-### Common Issues
+### Testing Strategy
 
-#### Vite Manifest Error
-
-**Error:** `Unable to locate file in Vite manifest`
-
-**Solution:**
-```bash
-npm run build
-# or for development
-npm run dev
-```
-
-#### Permission Denied Errors
-
-**Error:** `Permission denied` when writing to storage/logs
-
-**Solution:**
-```bash
-chmod -R 775 storage bootstrap/cache
-chown -R www-data:www-data storage bootstrap/cache
-```
-
-#### Database Connection Failed
-
-**Error:** `SQLSTATE[HY000] [2002] Connection refused`
-
-**Solution:**
-1. Verify database is running
-2. Check `.env` database credentials
-3. Test connection: `php artisan db:show`
-
-#### Queue Not Processing
-
-**Issue:** Jobs remain in queue
-
-**Solution:**
-```bash
-# Run queue worker
-php artisan queue:work
-
-# For development, use with timeout
-php artisan queue:listen --tries=3
-
-# Clear failed jobs
-php artisan queue:flush
-```
-
-#### Class Not Found After Creating New File
-
-**Solution:**
-```bash
-composer dump-autoload
-```
-
-#### Route Not Found
-
-**Solution:**
-```bash
-php artisan route:clear
-php artisan route:cache
-php artisan route:list  # Verify route exists
-```
-
-#### Config Cached in Development
-
-**Issue:** `.env` changes not taking effect
-
-**Solution:**
-```bash
-php artisan config:clear
-php artisan cache:clear
-```
-
-#### Tests Failing Due to Database
-
-**Solution:**
-```bash
-# Use in-memory SQLite for tests
-# In phpunit.xml or .env.testing
-DB_CONNECTION=sqlite
-DB_DATABASE=:memory:
-```
-
-#### API Documentation Not Showing
-
-**Solution:**
-```bash
-php artisan scramble:generate
-php artisan route:clear
-```
-
-### Getting Help
-
-- Check Laravel 12 documentation: https://laravel.com/docs/12.x
-- Review Telescope for debugging: http://localhost:8000/telescope
-- Enable debug mode: Set `APP_DEBUG=true` in `.env`
-- Check logs: `storage/logs/laravel.log` or use `php artisan pail`
-
-## Features
-
-### Core API Features
-
-- **RESTful API** - Standard REST conventions for all resources
-- **Automatic OpenAPI Documentation** - Interactive docs at `/docs/api`
-- **Advanced Querying** - Filter, sort, include relationships, select fields
-- **Type-Safe DTOs** - Spatie Laravel Data for structured data transfer
-- **Form Request Validation** - Centralized, reusable validation logic
-- **API Resources** - Consistent response transformation
-- **Role & Permission Management** - Spatie Laravel Permission integration
-
-### Developer Experience
-
-- **Laravel Telescope** - Debugging and monitoring dashboard
-- **Laravel Debugbar** - Development debugging toolbar
-- **IDE Helpers** - Full IDE autocompletion support
-- **Laravel Pint** - Automatic code formatting
-- **Pest v4 Testing** - Modern testing framework with browser testing
-- **Hot Module Replacement** - Vite for fast frontend development
-- **Real-time Logs** - Laravel Pail for log viewing
-
-### Development Tools
-
-- **Blueprint Integration** - Generate resources from YAML
-- **Factory & Seeders** - Easy test data generation
-- **Multiple Dev Environments** - DDEV, Sail, or traditional setup
-- **Queue Management** - Background job processing
-- **Database Migrations** - Version-controlled database changes
-
-### Query Capabilities
-
-Using Spatie Laravel Query Builder:
-
-- **Includes** - Eager load relationships dynamically
-- **Filters** - Filter by any model attribute
-- **Sorting** - Sort by any field, ascending or descending
-- **Field Selection** - Request only needed fields
-- **Counts & Exists** - Include relationship counts
-
-## Testing Strategy
-
-### Testing Approach
+#### Testing Approach
 
 This project follows a comprehensive testing strategy:
 
 - **Feature Tests** - Test complete user flows and API endpoints
 - **Unit Tests** - Test individual classes and methods in isolation
-- **Browser Tests** - Test UI interactions (Pest v4)
+- **Browser Tests** - Test UI interactions using Pest v4
 
-### Writing Tests
+#### Test Locations
 
-Tests are located in:
 - `tests/Feature/` - Feature tests for controllers, APIs
 - `tests/Unit/` - Unit tests for models, services, utilities
 - `tests/Browser/` - Browser-based tests
@@ -910,7 +841,7 @@ test('can view post list', function () {
 });
 ```
 
-### Running Tests
+#### Running Tests
 
 ```bash
 # All tests
@@ -932,7 +863,7 @@ php artisan test --parallel
 php artisan test --stop-on-failure
 ```
 
-### Test Database
+#### Test Database
 
 Tests use SQLite in-memory database by default for speed. Configure in `phpunit.xml`:
 
@@ -941,7 +872,7 @@ Tests use SQLite in-memory database by default for speed. Configure in `phpunit.
 <env name="DB_DATABASE" value=":memory:"/>
 ```
 
-### Best Practices
+#### Testing Best Practices
 
 - Use `RefreshDatabase` trait to reset database between tests
 - Use model factories for creating test data
@@ -949,6 +880,8 @@ Tests use SQLite in-memory database by default for speed. Configure in `phpunit.
 - Use specific assertions (`assertCreated`, `assertOk`) instead of `assertStatus`
 - Mock external services and APIs
 - Keep tests fast and independent
+
+---
 
 ## Deployment
 
@@ -1127,6 +1060,111 @@ curl https://api.example.com/up
 tail -f storage/logs/laravel.log
 ```
 
+---
+
+## Troubleshooting
+
+### Common Issues
+
+#### Vite Manifest Error
+
+**Error:** `Unable to locate file in Vite manifest`
+
+**Solution:**
+```bash
+npm run build
+# or for development
+npm run dev
+```
+
+#### Permission Denied Errors
+
+**Error:** `Permission denied` when writing to storage/logs
+
+**Solution:**
+```bash
+chmod -R 775 storage bootstrap/cache
+chown -R www-data:www-data storage bootstrap/cache
+```
+
+#### Database Connection Failed
+
+**Error:** `SQLSTATE[HY000] [2002] Connection refused`
+
+**Solution:**
+1. Verify database is running
+2. Check `.env` database credentials
+3. Test connection: `php artisan db:show`
+
+#### Queue Not Processing
+
+**Issue:** Jobs remain in queue
+
+**Solution:**
+```bash
+# Run queue worker
+php artisan queue:work
+
+# For development, use with timeout
+php artisan queue:listen --tries=3
+
+# Clear failed jobs
+php artisan queue:flush
+```
+
+#### Class Not Found After Creating New File
+
+**Solution:**
+```bash
+composer dump-autoload
+```
+
+#### Route Not Found
+
+**Solution:**
+```bash
+php artisan route:clear
+php artisan route:cache
+php artisan route:list  # Verify route exists
+```
+
+#### Config Cached in Development
+
+**Issue:** `.env` changes not taking effect
+
+**Solution:**
+```bash
+php artisan config:clear
+php artisan cache:clear
+```
+
+#### Tests Failing Due to Database
+
+**Solution:**
+```bash
+# Use in-memory SQLite for tests
+# In phpunit.xml or .env.testing
+DB_CONNECTION=sqlite
+DB_DATABASE=:memory:
+```
+
+#### API Documentation Not Showing
+
+**Solution:**
+```bash
+php artisan scramble:generate
+php artisan route:clear
+```
+
+### Getting Help
+
+- **Laravel 12 Documentation**: https://laravel.com/docs/12.x
+- **Telescope Dashboard**: http://localhost:8000/telescope
+- **Debug Mode**: Set `APP_DEBUG=true` in `.env`
+- **Logs**: Check `storage/logs/laravel.log` or use `php artisan pail`
+
+---
+
 ## Contributing
 
 We welcome contributions to this project! Here's how you can help:
@@ -1172,16 +1210,35 @@ php artisan test
 vendor/bin/pint --dirty
 ```
 
-#### Commit Messages
+### Commit Message Guidelines
 
-Follow the commit message format:
+Write clear, concise commit messages that follow this format:
+
 ```
 type: brief description
 
-Longer explanation if needed
+Longer explanation if needed (optional)
 ```
 
-Types: `feat`, `fix`, `refactor`, `test`, `docs`, `style`, `chore`
+**Types:**
+- `feat:` New feature
+- `fix:` Bug fix
+- `refactor:` Code refactoring
+- `test:` Adding or updating tests
+- `docs:` Documentation changes
+- `style:` Code style/formatting changes
+- `chore:` Maintenance tasks
+
+**Examples:**
+```
+feat: add post filtering by status
+
+fix: resolve N+1 query in post index endpoint
+
+test: add validation tests for PostStoreRequest
+
+refactor: extract user assignment to HasUserId trait
+```
 
 ### Submitting Changes
 
@@ -1208,6 +1265,18 @@ Your PR should:
 - Keep PRs focused and reasonably sized
 - Squash commits before merging if requested
 
+### Branch Naming
+
+- `feature/` - New features (e.g., `feature/add-post-filtering`)
+- `fix/` - Bug fixes (e.g., `fix/n-plus-one-posts`)
+- `refactor/` - Code improvements (e.g., `refactor/optimize-queries`)
+- `test/` - Test additions (e.g., `test/post-controller`)
+
+### Current Branch Structure
+
+- **main** - Production-ready code
+- **develop** - Development branch (current working branch)
+
 ### Reporting Issues
 
 When reporting bugs:
@@ -1232,6 +1301,8 @@ When suggesting features:
 - Join our community chat (if available)
 
 Thank you for contributing!
+
+---
 
 ## License
 
