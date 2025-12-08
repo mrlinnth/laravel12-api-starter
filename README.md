@@ -10,4 +10,25 @@ A starter repo with default configuration to quickly start a project to develop 
 - Apache/Nginx
 
 ## Installed Packages
-- `composer require 
+
+- 
+
+## Local Installation
+
+1.
+
+## Workflow to Add New Resource
+
+1.
+
+## Useful Commands
+
+-
+
+## Code Style
+
+-
+
+## Git Commit and PR Templates
+
+-
