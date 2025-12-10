@@ -2,47 +2,64 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\TagStoreRequest;
 use App\Http\Requests\Api\TagUpdateRequest;
-use App\Http\Resources\Api\TagCollection;
 use App\Http\Resources\Api\TagResource;
 use App\Models\Tag;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
-class TagController extends Controller
+class TagController extends BaseApiController
 {
-    public function index(Request $request): TagCollection
+    protected function model(): string
     {
-        $tags = Tag::all();
-
-        return new TagCollection($tags);
+        return Tag::class;
     }
 
-    public function store(TagStoreRequest $request): TagResource
+    protected function resource(): string
+    {
+        return TagResource::class;
+    }
+
+    protected function allowedFilters(): array
+    {
+        return ['title'];
+    }
+
+    protected function allowedSorts(): array
+    {
+        return ['created_at', 'title', 'id'];
+    }
+
+    protected function allowedIncludes(): array
+    {
+        return ['posts'];
+    }
+
+    public function store(TagStoreRequest $request): JsonResponse
     {
         $tag = Tag::create($request->validated());
 
-        return new TagResource($tag);
+        return $this->createdResponse(
+            new TagResource($tag),
+            'Tag created successfully'
+        );
     }
 
-    public function show(Request $request, Tag $tag): TagResource
-    {
-        return new TagResource($tag);
-    }
-
-    public function update(TagUpdateRequest $request, Tag $tag): TagResource
+    public function update(TagUpdateRequest $request, Tag $tag): JsonResponse
     {
         $tag->update($request->validated());
 
-        return new TagResource($tag);
+        return $this->successResponse(
+            new TagResource($tag),
+            'Tag updated successfully'
+        );
     }
 
-    public function destroy(Request $request, Tag $tag): Response
+    public function destroy(Request $request, Tag $tag): JsonResponse
     {
         $tag->delete();
 
-        return response()->noContent();
+        return $this->deletedResponse('Tag deleted successfully');
     }
 }

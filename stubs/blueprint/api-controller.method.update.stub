@@ -1,0 +1,9 @@
+    public function update({{ requestClass }} $request, {{ modelClass }} ${{ modelVariable }}): JsonResponse
+    {
+        ${{ modelVariable }}->update($request->validated());
+
+        return $this->successResponse(
+            new {{ resourceClass }}(${{ modelVariable }}),
+            '{{ modelName }} updated successfully'
+        );
+    }
