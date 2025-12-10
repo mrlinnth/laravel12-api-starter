@@ -2,47 +2,69 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\CommentStoreRequest;
 use App\Http\Requests\Api\CommentUpdateRequest;
-use App\Http\Resources\Api\CommentCollection;
 use App\Http\Resources\Api\CommentResource;
 use App\Models\Comment;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use Spatie\QueryBuilder\AllowedFilter;
 
-class CommentController extends Controller
+class CommentController extends BaseApiController
 {
-    public function index(Request $request): CommentCollection
+    protected function model(): string
     {
-        $comments = Comment::all();
-
-        return new CommentCollection($comments);
+        return Comment::class;
     }
 
-    public function store(CommentStoreRequest $request): CommentResource
+    protected function resource(): string
+    {
+        return CommentResource::class;
+    }
+
+    protected function allowedFilters(): array
+    {
+        return [
+            AllowedFilter::exact('post_id'),
+            AllowedFilter::exact('user_id'),
+            'content',
+        ];
+    }
+
+    protected function allowedSorts(): array
+    {
+        return ['created_at', 'id'];
+    }
+
+    protected function allowedIncludes(): array
+    {
+        return ['post', 'user'];
+    }
+
+    public function store(CommentStoreRequest $request): JsonResponse
     {
         $comment = Comment::create($request->validated());
 
-        return new CommentResource($comment);
+        return $this->createdResponse(
+            new CommentResource($comment),
+            'Comment created successfully'
+        );
     }
 
-    public function show(Request $request, Comment $comment): CommentResource
-    {
-        return new CommentResource($comment);
-    }
-
-    public function update(CommentUpdateRequest $request, Comment $comment): CommentResource
+    public function update(CommentUpdateRequest $request, Comment $comment): JsonResponse
     {
         $comment->update($request->validated());
 
-        return new CommentResource($comment);
+        return $this->successResponse(
+            new CommentResource($comment),
+            'Comment updated successfully'
+        );
     }
 
-    public function destroy(Request $request, Comment $comment): Response
+    public function destroy(Request $request, Comment $comment): JsonResponse
     {
         $comment->delete();
 
-        return response()->noContent();
+        return $this->deletedResponse('Comment deleted successfully');
     }
 }
