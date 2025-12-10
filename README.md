@@ -15,6 +15,7 @@ A production-ready Laravel 12 REST API starter with automatic OpenAPI documentat
   - [Workflow to Add New Resource](#workflow-to-add-new-resource)
   - [Useful Commands](#useful-commands)
   - [Code Style](#code-style)
+  - [BaseApiController Deep Dive](#baseapicontroller-deep-dive)
   - [API Usage & Examples](#api-usage--examples)
   - [Authentication & Authorization](#authentication--authorization)
   - [Testing Strategy](#testing-strategy)
@@ -30,6 +31,8 @@ A production-ready Laravel 12 REST API starter with automatic OpenAPI documentat
 ### Core API Features
 
 - **RESTful API** - Standard REST conventions for all resources (Posts, Comments, Tags)
+- **BaseApiController Pattern** - Unified base controller with automatic query building and pagination
+- **ApiResponse Trait** - Standardized JSON responses with consistent error handling
 - **Automatic OpenAPI Documentation** - Interactive docs with "Try It" feature at `/docs/api`
 - **Advanced Querying** - Filter, sort, include relationships, select specific fields
 - **Type-Safe DTOs** - Spatie Laravel Data for structured data transfer
@@ -39,6 +42,8 @@ A production-ready Laravel 12 REST API starter with automatic OpenAPI documentat
 
 ### Developer Experience
 
+- **Custom Blueprint Generator** - ApiControllerGenerator for automatic BaseApiController creation
+- **Smart Code Generation** - Auto-detects filters, sorts, and includes from model schema
 - **Laravel Telescope** - Debugging and monitoring dashboard at `/telescope`
 - **Laravel Debugbar** - Development debugging toolbar
 - **IDE Helpers** - Full IDE autocompletion support
@@ -46,7 +51,7 @@ A production-ready Laravel 12 REST API starter with automatic OpenAPI documentat
 - **Pest v4 Testing** - Modern testing framework with browser testing
 - **Hot Module Replacement** - Vite for fast frontend development
 - **Real-time Logs** - Laravel Pail for log viewing
-- **Blueprint Integration** - Generate resources from YAML definitions
+- **Blueprint Integration** - Generate complete resources from YAML definitions
 
 ### Development Tools
 
@@ -87,23 +92,32 @@ Using Spatie Laravel Query Builder:
 ```
 laravel12-api/
 ├── app/
+│   ├── Blueprint/
+│   │   └── Generators/  # Custom Blueprint generators (ApiControllerGenerator)
 │   ├── Console/          # Artisan commands (auto-registered in Laravel 12)
 │   ├── Data/            # Spatie Data DTOs for type-safe data handling
 │   ├── Enums/           # PHP Enums with string backing (PostStatus, etc.)
 │   ├── Http/
 │   │   ├── Controllers/
-│   │   │   └── Api/     # RESTful API controllers
+│   │   │   └── Api/
+│   │   │       ├── BaseApiController.php  # Base controller with query building
+│   │   │       └── *Controller.php        # RESTful API controllers
 │   │   ├── Requests/
 │   │   │   └── Api/     # Form Request validation classes
 │   │   └── Resources/
 │   │       └── Api/     # API Resources & Collections
 │   ├── Models/          # Eloquent models with relationships
 │   ├── Providers/       # Service providers
-│   └── Traits/          # Reusable traits (HasUserId, EnumArray)
+│   └── Traits/
+│       ├── ApiResponse.php  # Standardized JSON response methods
+│       ├── HasUserId.php    # Auto-assign user_id trait
+│       └── EnumArray.php    # Enum utilities
 ├── bootstrap/
 │   ├── app.php          # Application configuration (Laravel 12 style)
 │   └── providers.php    # Service provider registration
-├── config/              # Configuration files
+├── config/
+│   ├── blueprint.php    # Blueprint configuration with custom generators
+│   └── ...             # Other configuration files
 ├── database/
 │   ├── factories/       # Model factories for testing
 │   ├── migrations/      # Database migrations
@@ -118,6 +132,12 @@ laravel12-api/
 │   ├── web.php         # Web routes
 │   └── console.php     # Console routes
 ├── storage/            # Application storage (logs, cache, uploads)
+├── stubs/
+│   └── blueprint/      # Custom Blueprint stub files for code generation
+│       ├── api-controller.class.stub
+│       ├── api-controller.method.store.stub
+│       ├── api-controller.method.update.stub
+│       └── api-controller.method.destroy.stub
 ├── tests/
 │   ├── Feature/        # Feature tests for controllers, APIs
 │   ├── Unit/          # Unit tests for models, services
@@ -128,10 +148,132 @@ laravel12-api/
 ### Key Architectural Patterns
 
 - **Laravel 12 Structure**: No `app/Http/Middleware/` or `app/Console/Kernel.php`
+- **BaseApiController Pattern**: All API controllers extend `BaseApiController` for consistent query building
+- **ApiResponse Trait**: Standardized JSON responses across all API endpoints
 - **Data Layer**: Spatie Data objects for type-safe DTOs with automatic validation
 - **API Resources**: Transform Eloquent models to consistent JSON responses
 - **Form Requests**: Centralized validation logic with array-based rules
 - **Traits**: Shared behaviors (e.g., `HasUserId` auto-assigns authenticated user)
+
+#### BaseApiController & ApiResponse Trait
+
+This project uses a custom **BaseApiController** that provides:
+
+- **Automatic Query Building** with Spatie Query Builder integration
+- **Consistent API Responses** via ApiResponse trait
+- **DRY Principle** - Define model, resource, filters, sorts, and includes once
+
+**BaseApiController Features:**
+
+```php
+abstract class BaseApiController extends Controller
+{
+    use ApiResponse;
+
+    // Define these in your controller
+    abstract protected function model(): string;
+    abstract protected function resource(): string;
+
+    protected function allowedFilters(): array { return []; }
+    protected function allowedSorts(): array { return ['created_at']; }
+    protected function allowedIncludes(): array { return []; }
+    protected function defaultIncludes(): array { return []; }
+    protected function allowedFields(): array { return []; }
+
+    // Pre-built methods
+    public function index(Request $request) { /* ... */ }
+    public function show(Request $request, $id) { /* ... */ }
+
+    // Hooks for customization
+    protected function modifyQuery(QueryBuilder $query, Request $request) { /* ... */ }
+}
+```
+
+**ApiResponse Trait Methods:**
+
+- `successResponse($data, $message, $status = 200)` - Standard success response
+- `createdResponse($data, $message)` - 201 Created response
+- `deletedResponse($message)` - 200 OK for deletions
+- `noContentResponse()` - 204 No Content
+- `errorResponse($message, $status, $errors)` - Error response
+- `validationErrorResponse($errors, $message)` - 422 Validation errors
+- `notFoundResponse($message)` - 404 Not Found
+- `unauthorizedResponse($message)` - 401 Unauthorized
+- `forbiddenResponse($message)` - 403 Forbidden
+- `badRequestResponse($message)` - 400 Bad Request
+- `conflictResponse($message)` - 409 Conflict
+- `serverErrorResponse($message)` - 500 Internal Server Error
+
+**Example Controller:**
+
+```php
+class PostController extends BaseApiController
+{
+    protected function model(): string
+    {
+        return Post::class;
+    }
+
+    protected function resource(): string
+    {
+        return PostResource::class;
+    }
+
+    protected function allowedFilters(): array
+    {
+        return [
+            AllowedFilter::exact('status'),
+            AllowedFilter::exact('user_id'),
+            'title',
+            'content',
+        ];
+    }
+
+    protected function allowedSorts(): array
+    {
+        return ['created_at', 'published_at', 'title', 'id'];
+    }
+
+    protected function allowedIncludes(): array
+    {
+        return ['user', 'comments', 'tags'];
+    }
+
+    // Only need to implement store, update, destroy
+    // index() and show() are provided by BaseApiController
+
+    public function store(PostStoreRequest $request): JsonResponse
+    {
+        $post = Post::create($request->validated());
+
+        return $this->createdResponse(
+            new PostResource($post),
+            'Post created successfully'
+        );
+    }
+}
+```
+
+**Response Format:**
+
+All API responses follow this consistent structure:
+
+```json
+{
+  "success": true,
+  "data": { /* resource data */ },
+  "message": "Operation completed successfully"
+}
+```
+
+For errors:
+```json
+{
+  "success": false,
+  "message": "Error message",
+  "errors": { /* validation errors or details */ }
+}
+```
 
 ---
 
@@ -345,9 +487,128 @@ QUEUE_CONNECTION=redis
 
 ### Workflow to Add New Resource
 
-This project follows a structured approach for creating API resources. Here's the recommended workflow:
+This project follows a structured approach for creating API resources. You can choose between two workflows:
 
-#### 1. Generate Model with migrations, factory, and seeder
+#### Option A: Using Blueprint (Recommended)
+
+**Laravel Blueprint** is integrated into this project with a **custom ApiControllerGenerator** that automatically creates controllers following the `BaseApiController` pattern.
+
+**1. Create a draft.yaml file:**
+
+```yaml
+models:
+  Product:
+    id
+    name: string:255
+    description: longtext nullable
+    price: decimal:8,2
+    status: enum:draft,active,archived
+    category_id: id foreign
+    sku: string:100 unique
+    published_at: nullable timestamp
+    softDeletes
+    timestamps
+    relationships:
+      belongsTo: Category
+      hasMany: Review
+
+controllers:
+  Api\Product:
+    resource: api
+```
+
+**2. Run Blueprint:**
+
+```bash
+php artisan blueprint:build draft.yaml
+```
+
+This single command generates:
+- ✅ Model with proper relationships and casts
+- ✅ Migration with all fields
+- ✅ Factory with realistic fake data
+- ✅ API Controller extending `BaseApiController` with:
+  - Smart filters (exact for enums/foreign keys, partial for text)
+  - Smart sorts (created_at, published_at, name, etc.)
+  - Auto-configured relationship includes
+  - Store, update, destroy methods using ApiResponse trait
+- ✅ Form Requests (ProductStoreRequest, ProductUpdateRequest)
+- ✅ API Resources (ProductResource)
+- ✅ Feature tests
+- ✅ Routes in routes/api.php
+
+**Custom ApiControllerGenerator Features:**
+- Automatically extends `BaseApiController` instead of standard Controller
+- Smart filter detection based on column types (exact for FK/enums, partial for strings)
+- Auto-generates allowedFilters(), allowedSorts(), allowedIncludes()
+- Uses ApiResponse trait methods (createdResponse, successResponse, deletedResponse)
+- Only generates store/update/destroy (index/show are in BaseApiController)
+- Proper imports for Form Requests and Resources
+
+**Generated Controller Example:**
+
+```php
+class ProductController extends BaseApiController
+{
+    protected function model(): string
+    {
+        return Product::class;
+    }
+
+    protected function resource(): string
+    {
+        return ProductResource::class;
+    }
+
+    protected function allowedFilters(): array
+    {
+        return [
+            'name',
+            AllowedFilter::exact('status'),
+            AllowedFilter::exact('category_id'),
+            'sku',
+        ];
+    }
+
+    protected function allowedSorts(): array
+    {
+        return ['name', 'published_at', 'id'];
+    }
+
+    protected function allowedIncludes(): array
+    {
+        return ['category', 'review'];
+    }
+
+    public function store(ProductStoreRequest $request): JsonResponse
+    {
+        $product = Product::create($request->validated());
+        return $this->createdResponse(
+            new ProductResource($product),
+            'Product created successfully'
+        );
+    }
+    // ... update and destroy methods
+}
+```
+
+**3. Customize if needed:**
+- Edit generated files to add custom logic
+- Modify validation rules in Form Requests
+- Update Resource transformations
+
+**4. Format and test:**
+
+```bash
+vendor/bin/pint --dirty
+php artisan test
+```
+
+#### Option B: Manual Generation
+
+If you prefer manual control or need custom logic:
+
+**1. Generate Model with migrations, factory, and seeder**
 
 ```bash
 php artisan make:model Post --migration --factory --seed --no-interaction
@@ -581,13 +842,245 @@ This ensures your code follows the project's coding standards.
 
 #### Code Structure Conventions
 
-- **Controllers**: Simple and focused, delegate to Form Requests for validation
+- **Controllers**: Extend `BaseApiController`, define model/resource/filters/sorts/includes
 - **Form Requests**: Array-based validation rules with explicit return types
 - **Models**: Type-hinted relationships, use `casts()` method
 - **API Resources**: Use `whenLoaded()` for optional relationships
 - **Tests**: Use PHPUnit attributes (`#[Test]`), specific assertions (`assertOk()`, `assertCreated()`)
 
 For comprehensive coding guidelines, see `.github/copilot-instructions.md` which contains Laravel Boost guidelines.
+
+---
+
+### BaseApiController Deep Dive
+
+#### Overview
+
+All API controllers in this project extend `BaseApiController`, which provides:
+- Automatic query building with Spatie Query Builder
+- Built-in pagination support
+- Standardized JSON responses via ApiResponse trait
+- Consistent error handling
+- DRY principle for common CRUD operations
+
+#### Configuration Methods
+
+Define these abstract/protected methods in your controller:
+
+```php
+// Required abstract methods
+abstract protected function model(): string;           // Return the model class
+abstract protected function resource(): string;        // Return the API resource class
+
+// Optional configuration methods
+protected function allowedFilters(): array;            // Define filterable fields
+protected function allowedSorts(): array;              // Define sortable fields
+protected function allowedIncludes(): array;           // Define eager-loadable relationships
+protected function defaultIncludes(): array;           // Relationships always loaded
+protected function allowedFields(): array;             // Fields that can be selected
+```
+
+#### Built-in Methods
+
+**index(Request $request)**
+- Automatically handles pagination (`?per_page=20`)
+- Applies filters, sorts, includes based on query params
+- Returns paginated resource collection
+- Calls `modifyQuery()` hook for custom filtering
+
+**show(Request $request, $id)**
+- Finds model by ID with configured includes
+- Applies allowed filters and relationships
+- Returns single resource
+- Throws 404 if not found
+
+#### Customization Hooks
+
+**modifyQuery(QueryBuilder $query, Request $request): QueryBuilder**
+
+Override this method to add custom query logic:
+
+```php
+protected function modifyQuery(QueryBuilder $query, Request $request): QueryBuilder
+{
+    // Add custom scopes
+    if ($request->has('featured')) {
+        $query->where('featured', true);
+    }
+
+    // Add user-specific filtering
+    if (!$request->user()->isAdmin()) {
+        $query->where('user_id', $request->user()->id);
+    }
+
+    return $query;
+}
+```
+
+#### ApiResponse Trait Reference
+
+The `ApiResponse` trait provides standardized response methods:
+
+**Success Responses:**
+```php
+// Generic success (200)
+return $this->successResponse($data, 'Success message');
+
+// Created (201)
+return $this->createdResponse(
+    new PostResource($post),
+    'Post created successfully'
+);
+
+// Deleted (200)
+return $this->deletedResponse('Post deleted successfully');
+
+// No content (204)
+return $this->noContentResponse();
+```
+
+**Error Responses:**
+```php
+// Bad request (400)
+return $this->badRequestResponse('Invalid request');
+
+// Unauthorized (401)
+return $this->unauthorizedResponse('Authentication required');
+
+// Forbidden (403)
+return $this->forbiddenResponse('Access denied');
+
+// Not found (404)
+return $this->notFoundResponse('Post not found');
+
+// Conflict (409)
+return $this->conflictResponse('Duplicate entry');
+
+// Validation error (422)
+return $this->validationErrorResponse(
+    $validator->errors(),
+    'Validation failed'
+);
+
+// Server error (500)
+return $this->serverErrorResponse('Something went wrong');
+
+// Custom error
+return $this->errorResponse('Custom error', 418, ['details' => 'Extra info']);
+```
+
+#### Advanced Usage Examples
+
+**Example 1: Custom Query Modification**
+
+```php
+class PostController extends BaseApiController
+{
+    protected function modifyQuery(QueryBuilder $query, Request $request): QueryBuilder
+    {
+        // Only show published posts to non-admin users
+        if (!$request->user()?->hasRole('admin')) {
+            $query->where('status', 'published');
+        }
+
+        // Filter by date range
+        if ($request->has('from_date')) {
+            $query->where('created_at', '>=', $request->from_date);
+        }
+
+        return $query;
+    }
+}
+```
+
+**Example 2: Default Includes**
+
+```php
+protected function defaultIncludes(): array
+{
+    return ['user']; // Always load user relationship
+}
+
+protected function allowedIncludes(): array
+{
+    return ['user', 'comments', 'tags']; // Can optionally include these
+}
+```
+
+**Example 3: Field Selection**
+
+```php
+protected function allowedFields(): array
+{
+    return ['id', 'title', 'status', 'created_at'];
+}
+
+// Request: GET /api/posts?fields=id,title
+// Returns only id and title fields
+```
+
+**Example 4: Complex Filters**
+
+```php
+use Spatie\QueryBuilder\AllowedFilter;
+
+protected function allowedFilters(): array
+{
+    return [
+        AllowedFilter::exact('status'),           // Exact match
+        AllowedFilter::exact('user_id'),          // Exact match for FK
+        AllowedFilter::partial('title'),          // Partial match (LIKE)
+        AllowedFilter::scope('published'),        // Model scope
+        AllowedFilter::callback('min_price', function ($query, $value) {
+            $query->where('price', '>=', $value);
+        }),
+    ];
+}
+```
+
+#### Response Structure
+
+All responses follow this format:
+
+**Success (200, 201):**
+```json
+{
+  "success": true,
+  "data": { /* resource or collection */ },
+  "message": "Operation successful"
+}
+```
+
+**Paginated Collection:**
+```json
+{
+  "success": true,
+  "data": [/* resources */],
+  "links": {
+    "first": "http://api.example.com/posts?page=1",
+    "last": "http://api.example.com/posts?page=5",
+    "prev": null,
+    "next": "http://api.example.com/posts?page=2"
+  },
+  "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 5,
+    "per_page": 15,
+    "to": 15,
+    "total": 73
+  }
+}
+```
+
+**Error (400-599):**
+```json
+{
+  "success": false,
+  "message": "Error description",
+  "errors": { /* validation errors or additional details */ }
+}
+```
 
 ---
 

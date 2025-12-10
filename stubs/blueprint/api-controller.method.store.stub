@@ -1,0 +1,9 @@
+    public function store({{ requestClass }} $request): JsonResponse
+    {
+        ${{ modelVariable }} = {{ modelClass }}::create($request->validated());
+
+        return $this->createdResponse(
+            new {{ resourceClass }}(${{ modelVariable }}),
+            '{{ modelName }} created successfully'
+        );
+    }
