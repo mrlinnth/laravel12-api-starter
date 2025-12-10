@@ -5,8 +5,6 @@ namespace Tests\Feature\Http\Controllers\Api;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
-use JMac\Testing\Traits\AdditionalAssertions;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -15,114 +13,101 @@ use Tests\TestCase;
  */
 final class PostControllerTest extends TestCase
 {
-    use AdditionalAssertions, RefreshDatabase, WithFaker;
+    use RefreshDatabase;
 
     #[Test]
-    public function index_behaves_as_expected(): void
+    public function index_returns_paginated_posts(): void
     {
-        $posts = Post::factory()->count(3)->create();
+        Post::factory()->count(3)->create();
 
-        $response = $this->get(route('posts.index'));
+        $response = $this->getJson(route('posts.index'));
 
         $response->assertOk();
-        $response->assertJsonStructure([]);
+        $response->assertJsonStructure([
+            'success',
+            'data' => [
+                '*' => ['id', 'title', 'content', 'status'],
+            ],
+        ]);
     }
 
     #[Test]
-    public function store_uses_form_request_validation(): void
+    public function show_returns_single_post(): void
     {
-        $this->assertActionUsesFormRequest(
-            \App\Http\Controllers\Api\PostController::class,
-            'store',
-            \App\Http\Requests\Api\PostStoreRequest::class
-        );
+        $post = Post::factory()->create();
+
+        $response = $this->getJson(route('posts.show', $post));
+
+        $response->assertOk();
+        $response->assertJsonStructure([
+            'success',
+            'data' => ['id', 'title', 'content', 'status'],
+        ]);
     }
 
     #[Test]
-    public function store_saves(): void
+    public function store_creates_post_with_valid_data(): void
     {
-        $title = fake()->sentence(4);
-        $content = fake()->paragraphs(3, true);
-        $status = fake()->randomElement(/** enum_attributes **/);
         $user = User::factory()->create();
 
-        $response = $this->post(route('posts.store'), [
-            'title' => $title,
-            'content' => $content,
-            'status' => $status,
+        $data = [
+            'title' => 'Test Post',
+            'content' => 'Test content',
+            'status' => 'draft',
+            'published_at' => null,
             'user_id' => $user->id,
-        ]);
+        ];
 
-        $posts = Post::query()
-            ->where('title', $title)
-            ->where('content', $content)
-            ->where('status', $status)
-            ->where('user_id', $user->id)
-            ->get();
-        $this->assertCount(1, $posts);
-        $post = $posts->first();
+        $response = $this->postJson(route('posts.store'), $data);
 
         $response->assertCreated();
-        $response->assertJsonStructure([]);
+        $this->assertDatabaseHas('posts', [
+            'title' => 'Test Post',
+            'content' => 'Test content',
+            'status' => 'draft',
+        ]);
     }
 
     #[Test]
-    public function show_behaves_as_expected(): void
+    public function store_validates_required_fields(): void
+    {
+        $response = $this->postJson(route('posts.store'), []);
+
+        $response->assertUnprocessable();
+    }
+
+    #[Test]
+    public function update_modifies_post_with_valid_data(): void
     {
         $post = Post::factory()->create();
-
-        $response = $this->get(route('posts.show', $post));
-
-        $response->assertOk();
-        $response->assertJsonStructure([]);
-    }
-
-    #[Test]
-    public function update_uses_form_request_validation(): void
-    {
-        $this->assertActionUsesFormRequest(
-            \App\Http\Controllers\Api\PostController::class,
-            'update',
-            \App\Http\Requests\Api\PostUpdateRequest::class
-        );
-    }
-
-    #[Test]
-    public function update_behaves_as_expected(): void
-    {
-        $post = Post::factory()->create();
-        $title = fake()->sentence(4);
-        $content = fake()->paragraphs(3, true);
-        $status = fake()->randomElement(/** enum_attributes **/);
         $user = User::factory()->create();
 
-        $response = $this->put(route('posts.update', $post), [
-            'title' => $title,
-            'content' => $content,
-            'status' => $status,
+        $data = [
+            'title' => 'Updated Title',
+            'content' => 'Updated content',
+            'status' => 'published',
+            'published_at' => now()->toISOString(),
             'user_id' => $user->id,
-        ]);
+        ];
 
-        $post->refresh();
+        $response = $this->putJson(route('posts.update', $post), $data);
 
         $response->assertOk();
-        $response->assertJsonStructure([]);
-
-        $this->assertEquals($title, $post->title);
-        $this->assertEquals($content, $post->content);
-        $this->assertEquals($status, $post->status);
-        $this->assertEquals($user->id, $post->user_id);
+        $this->assertDatabaseHas('posts', [
+            'id' => $post->id,
+            'title' => 'Updated Title',
+            'content' => 'Updated content',
+        ]);
     }
 
     #[Test]
-    public function destroy_deletes_and_responds_with(): void
+    public function destroy_deletes_post(): void
     {
         $post = Post::factory()->create();
 
-        $response = $this->delete(route('posts.destroy', $post));
+        $response = $this->deleteJson(route('posts.destroy', $post));
 
-        $response->assertNoContent();
-
-        $this->assertModelMissing($post);
+        $response->assertOk();
+        $this->assertSoftDeleted('posts', ['id' => $post->id]);
     }
 }

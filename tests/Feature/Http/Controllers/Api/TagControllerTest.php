@@ -4,8 +4,6 @@ namespace Tests\Feature\Http\Controllers\Api;
 
 use App\Models\Tag;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
-use JMac\Testing\Traits\AdditionalAssertions;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -14,96 +12,87 @@ use Tests\TestCase;
  */
 final class TagControllerTest extends TestCase
 {
-    use AdditionalAssertions, RefreshDatabase, WithFaker;
+    use RefreshDatabase;
 
     #[Test]
-    public function index_behaves_as_expected(): void
+    public function index_returns_paginated_tags(): void
     {
-        $tags = Tag::factory()->count(3)->create();
+        Tag::factory()->count(3)->create();
 
-        $response = $this->get(route('tags.index'));
+        $response = $this->getJson(route('tags.index'));
 
         $response->assertOk();
-        $response->assertJsonStructure([]);
-    }
-
-    #[Test]
-    public function store_uses_form_request_validation(): void
-    {
-        $this->assertActionUsesFormRequest(
-            \App\Http\Controllers\Api\TagController::class,
-            'store',
-            \App\Http\Requests\Api\TagStoreRequest::class
-        );
-    }
-
-    #[Test]
-    public function store_saves(): void
-    {
-        $title = fake()->sentence(4);
-
-        $response = $this->post(route('tags.store'), [
-            'title' => $title,
+        $response->assertJsonStructure([
+            'success',
+            'data' => [
+                '*' => ['id', 'title'],
+            ],
         ]);
+    }
 
-        $tags = Tag::query()
-            ->where('title', $title)
-            ->get();
-        $this->assertCount(1, $tags);
-        $tag = $tags->first();
+    #[Test]
+    public function show_returns_single_tag(): void
+    {
+        $tag = Tag::factory()->create();
+
+        $response = $this->getJson(route('tags.show', $tag));
+
+        $response->assertOk();
+        $response->assertJsonStructure([
+            'success',
+            'data' => ['id', 'title'],
+        ]);
+    }
+
+    #[Test]
+    public function store_creates_tag_with_valid_data(): void
+    {
+        $data = [
+            'title' => 'Laravel',
+        ];
+
+        $response = $this->postJson(route('tags.store'), $data);
 
         $response->assertCreated();
-        $response->assertJsonStructure([]);
-    }
-
-    #[Test]
-    public function show_behaves_as_expected(): void
-    {
-        $tag = Tag::factory()->create();
-
-        $response = $this->get(route('tags.show', $tag));
-
-        $response->assertOk();
-        $response->assertJsonStructure([]);
-    }
-
-    #[Test]
-    public function update_uses_form_request_validation(): void
-    {
-        $this->assertActionUsesFormRequest(
-            \App\Http\Controllers\Api\TagController::class,
-            'update',
-            \App\Http\Requests\Api\TagUpdateRequest::class
-        );
-    }
-
-    #[Test]
-    public function update_behaves_as_expected(): void
-    {
-        $tag = Tag::factory()->create();
-        $title = fake()->sentence(4);
-
-        $response = $this->put(route('tags.update', $tag), [
-            'title' => $title,
+        $this->assertDatabaseHas('tags', [
+            'title' => 'Laravel',
         ]);
-
-        $tag->refresh();
-
-        $response->assertOk();
-        $response->assertJsonStructure([]);
-
-        $this->assertEquals($title, $tag->title);
     }
 
     #[Test]
-    public function destroy_deletes_and_responds_with(): void
+    public function store_validates_required_fields(): void
+    {
+        $response = $this->postJson(route('tags.store'), []);
+
+        $response->assertUnprocessable();
+    }
+
+    #[Test]
+    public function update_modifies_tag_with_valid_data(): void
     {
         $tag = Tag::factory()->create();
 
-        $response = $this->delete(route('tags.destroy', $tag));
+        $data = [
+            'title' => 'Updated Tag',
+        ];
 
-        $response->assertNoContent();
+        $response = $this->putJson(route('tags.update', $tag), $data);
 
-        $this->assertModelMissing($tag);
+        $response->assertOk();
+        $this->assertDatabaseHas('tags', [
+            'id' => $tag->id,
+            'title' => 'Updated Tag',
+        ]);
+    }
+
+    #[Test]
+    public function destroy_deletes_tag(): void
+    {
+        $tag = Tag::factory()->create();
+
+        $response = $this->deleteJson(route('tags.destroy', $tag));
+
+        $response->assertOk();
+        $this->assertSoftDeleted('tags', ['id' => $tag->id]);
     }
 }

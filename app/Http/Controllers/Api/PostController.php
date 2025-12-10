@@ -2,12 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Requests\Api\PostStoreRequest;
-use App\Http\Requests\Api\PostUpdateRequest;
+use App\Data\PostData;
 use App\Http\Resources\Api\PostResource;
 use App\Models\Post;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class PostController extends BaseApiController
@@ -42,9 +40,9 @@ class PostController extends BaseApiController
         return ['user', 'comments', 'tags'];
     }
 
-    public function store(PostStoreRequest $request): JsonResponse
+    public function store(PostData $data): JsonResponse
     {
-        $post = Post::create($request->validated());
+        $post = Post::create($data->toArray());
 
         return $this->createdResponse(
             new PostResource($post),
@@ -52,9 +50,9 @@ class PostController extends BaseApiController
         );
     }
 
-    public function update(PostUpdateRequest $request, Post $post): JsonResponse
+    public function update(PostData $data, Post $post): JsonResponse
     {
-        $post->update($request->validated());
+        $post->update($data->toArray());
 
         return $this->successResponse(
             new PostResource($post),
@@ -62,7 +60,7 @@ class PostController extends BaseApiController
         );
     }
 
-    public function destroy(Request $request, Post $post): JsonResponse
+    public function destroy(Post $post): JsonResponse
     {
         $post->delete();
 

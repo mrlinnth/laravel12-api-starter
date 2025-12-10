@@ -2,12 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Requests\Api\CommentStoreRequest;
-use App\Http\Requests\Api\CommentUpdateRequest;
+use App\Data\CommentData;
 use App\Http\Resources\Api\CommentResource;
 use App\Models\Comment;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class CommentController extends BaseApiController
@@ -41,9 +39,9 @@ class CommentController extends BaseApiController
         return ['post', 'user'];
     }
 
-    public function store(CommentStoreRequest $request): JsonResponse
+    public function store(CommentData $data): JsonResponse
     {
-        $comment = Comment::create($request->validated());
+        $comment = Comment::create($data->toArray());
 
         return $this->createdResponse(
             new CommentResource($comment),
@@ -51,9 +49,9 @@ class CommentController extends BaseApiController
         );
     }
 
-    public function update(CommentUpdateRequest $request, Comment $comment): JsonResponse
+    public function update(CommentData $data, Comment $comment): JsonResponse
     {
-        $comment->update($request->validated());
+        $comment->update($data->toArray());
 
         return $this->successResponse(
             new CommentResource($comment),
@@ -61,7 +59,7 @@ class CommentController extends BaseApiController
         );
     }
 
-    public function destroy(Request $request, Comment $comment): JsonResponse
+    public function destroy(Comment $comment): JsonResponse
     {
         $comment->delete();
 

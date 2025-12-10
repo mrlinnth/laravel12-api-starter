@@ -1,6 +1,6 @@
-    public function store({{ requestClass }} $request): JsonResponse
+    public function store({{ dataClass }} $data): JsonResponse
     {
-        ${{ modelVariable }} = {{ modelClass }}::create($request->validated());
+        ${{ modelVariable }} = {{ modelClass }}::create($data->toArray());
 
         return $this->createdResponse(
             new {{ resourceClass }}(${{ modelVariable }}),

@@ -1,6 +1,6 @@
-    public function update({{ requestClass }} $request, {{ modelClass }} ${{ modelVariable }}): JsonResponse
+    public function update({{ dataClass }} $data, {{ modelClass }} ${{ modelVariable }}): JsonResponse
     {
-        ${{ modelVariable }}->update($request->validated());
+        ${{ modelVariable }}->update($data->toArray());
 
         return $this->successResponse(
             new {{ resourceClass }}(${{ modelVariable }}),

@@ -35,8 +35,8 @@ A production-ready Laravel 12 REST API starter with automatic OpenAPI documentat
 - **ApiResponse Trait** - Standardized JSON responses with consistent error handling
 - **Automatic OpenAPI Documentation** - Interactive docs with "Try It" feature at `/docs/api`
 - **Advanced Querying** - Filter, sort, include relationships, select specific fields
-- **Type-Safe DTOs** - Spatie Laravel Data for structured data transfer
-- **Form Request Validation** - Centralized, reusable validation logic
+- **Type-Safe DTOs** - Spatie Laravel Data for automatic validation and data transfer
+- **Data Object Validation** - Automatic validation from type-hinted properties
 - **API Resources** - Consistent response transformation
 - **Role & Permission Management** - Spatie Laravel Permission integration
 
@@ -150,9 +150,9 @@ laravel12-api/
 - **Laravel 12 Structure**: No `app/Http/Middleware/` or `app/Console/Kernel.php`
 - **BaseApiController Pattern**: All API controllers extend `BaseApiController` for consistent query building
 - **ApiResponse Trait**: Standardized JSON responses across all API endpoints
-- **Data Layer**: Spatie Data objects for type-safe DTOs with automatic validation
+- **Data Layer**: Spatie Data objects for type-safe DTOs with automatic validation from property types
 - **API Resources**: Transform Eloquent models to consistent JSON responses
-- **Form Requests**: Centralized validation logic with array-based rules
+- **Data Object Validation**: Type-hinted properties automatically generate validation rules
 - **Traits**: Shared behaviors (e.g., `HasUserId` auto-assigns authenticated user)
 
 #### BaseApiController & ApiResponse Trait
@@ -242,9 +242,9 @@ class PostController extends BaseApiController
     // Only need to implement store, update, destroy
     // index() and show() are provided by BaseApiController
 
-    public function store(PostStoreRequest $request): JsonResponse
+    public function store(PostData $data): JsonResponse
     {
-        $post = Post::create($request->validated());
+        $post = Post::create($data->toArray());
 
         return $this->createdResponse(
             new PostResource($post),
@@ -543,7 +543,8 @@ This single command generates:
 - Auto-generates allowedFilters(), allowedSorts(), allowedIncludes()
 - Uses ApiResponse trait methods (createdResponse, successResponse, deletedResponse)
 - Only generates store/update/destroy (index/show are in BaseApiController)
-- Proper imports for Form Requests and Resources
+- Generates controllers using Spatie Data objects instead of Form Requests
+- Proper imports for Data objects and Resources
 
 **Generated Controller Example:**
 
@@ -580,24 +581,79 @@ class ProductController extends BaseApiController
         return ['category', 'review'];
     }
 
-    public function store(ProductStoreRequest $request): JsonResponse
+    public function store(ProductData $data): JsonResponse
     {
-        $product = Product::create($request->validated());
+        $product = Product::create($data->toArray());
         return $this->createdResponse(
             new ProductResource($product),
             'Product created successfully'
         );
     }
-    // ... update and destroy methods
+
+    public function update(ProductData $data, Product $product): JsonResponse
+    {
+        $product->update($data->toArray());
+        return $this->successResponse(
+            new ProductResource($product),
+            'Product updated successfully'
+        );
+    }
+
+    public function destroy(Product $product): JsonResponse
+    {
+        $product->delete();
+        return $this->deletedResponse('Product deleted successfully');
+    }
 }
 ```
 
-**3. Customize if needed:**
+**3. Create Data Object:**
+
+After Blueprint generates the controller, create a corresponding Data object:
+
+```bash
+php artisan make:class Data/ProductData
+```
+
+Define your Data object with typed properties:
+
+```php
+<?php
+
+namespace App\Data;
+
+use Spatie\LaravelData\Attributes\WithCast;
+use Spatie\LaravelData\Casts\DateTimeInterfaceCast;
+use Spatie\LaravelData\Data;
+
+class ProductData extends Data
+{
+    public function __construct(
+        public string $name,
+        public ?string $description,
+        public float $price,
+        public int $stock,
+        public int $category_id,
+        public string $status,
+        #[WithCast(DateTimeInterfaceCast::class)]
+        public ?\DateTimeInterface $published_at,
+    ) {}
+}
+```
+
+**Key Features of Data Objects:**
+- **Automatic Validation** - Validation rules are auto-generated from property types
+- **Type Safety** - Strong typing throughout the request/response cycle
+- **No Form Requests Needed** - Data objects handle validation automatically
+- **Direct Controller Injection** - Type-hint Data objects in controller methods
+- **Easy Conversion** - Use `$data->toArray()` for model creation/updates
+
+**4. Customize if needed:**
 - Edit generated files to add custom logic
-- Modify validation rules in Form Requests
+- Add validation attributes to Data object properties
 - Update Resource transformations
 
-**4. Format and test:**
+**5. Format and test:**
 
 ```bash
 vendor/bin/pint --dirty
@@ -626,23 +682,48 @@ php artisan make:model Post --migration --factory --seed --no-interaction
 - Define `casts()` method for type casting
 - Add traits if needed (`HasFactory`, `HasUserId`)
 
-#### 4. Generate API Controller
+#### 4. Create Data Object
+
+```bash
+php artisan make:class Data/PostData --no-interaction
+```
+- Extend `Spatie\LaravelData\Data`
+- Define typed properties with attributes
+- Use `#[WithCast]` for custom casting (dates, enums, etc.)
+
+Example:
+```php
+class PostData extends Data
+{
+    public function __construct(
+        public string $title,
+        public string $content,
+        #[WithCast(EnumCast::class, type: PostStatus::class)]
+        public PostStatus $status,
+        #[WithCast(DateTimeInterfaceCast::class)]
+        public ?CarbonImmutable $published_at,
+    ) {}
+}
+```
+
+#### 5. Generate API Controller
 
 ```bash
 php artisan make:controller Api/PostController --api --no-interaction
 ```
-- Implement CRUD methods (index, store, show, update, destroy)
-- Use Form Requests for validation
+- Extend `BaseApiController`
+- Implement CRUD methods (store, update, destroy)
+- Use Data objects for validation (automatic from type hints)
 - Return API Resources
 
-#### 5. Generate Form Requests
-
-```bash
-php artisan make:request Api/PostStoreRequest --no-interaction
-php artisan make:request Api/PostUpdateRequest --no-interaction
+Example:
+```php
+public function store(PostData $data): JsonResponse
+{
+    $post = Post::create($data->toArray());
+    return $this->createdResponse(new PostResource($post), 'Post created successfully');
+}
 ```
-- Define validation rules (use array format)
-- Set `authorize()` method appropriately
 
 #### 6. Generate API Resources
 
@@ -653,42 +734,35 @@ php artisan make:resource Api/PostCollection --no-interaction
 - Define response structure in `toArray()` method
 - Use `whenLoaded()` for relationships
 
-#### 7. Create Data Object (optional but recommended)
-
-```bash
-php artisan make:class Data/PostData --no-interaction
-```
-- Extend `Spatie\LaravelData\Data`
-- Define typed properties with attributes
-
-#### 8. Register API routes
+#### 7. Register API routes
 
 Add resource route in `routes/api.php`:
 ```php
 Route::apiResource('posts', App\Http\Controllers\Api\PostController::class);
 ```
 
-#### 9. Update Factory
+#### 8. Update Factory
 
 Define realistic fake data in `database/factories/PostFactory.php`
 
-#### 10. Create Tests
+#### 9. Create Tests
 
 ```bash
 php artisan make:test Feature/Http/Controllers/Api/PostControllerTest --no-interaction
 ```
 - Test all CRUD operations
-- Test validation rules
+- Test validation (Data objects auto-validate)
 - Use `RefreshDatabase` trait
+- Use specific assertions (`assertCreated`, `assertOk`)
 
-#### 11. Run tests and format code
+#### 10. Run tests and format code
 
 ```bash
 php artisan test --filter=PostControllerTest
 vendor/bin/pint --dirty
 ```
 
-#### 12. Verify API documentation
+#### 11. Verify API documentation
 
 Visit `/docs/api` to see auto-generated OpenAPI documentation
 

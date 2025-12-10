@@ -6,8 +6,6 @@ use App\Models\Comment;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
-use JMac\Testing\Traits\AdditionalAssertions;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -16,108 +14,97 @@ use Tests\TestCase;
  */
 final class CommentControllerTest extends TestCase
 {
-    use AdditionalAssertions, RefreshDatabase, WithFaker;
+    use RefreshDatabase;
 
     #[Test]
-    public function index_behaves_as_expected(): void
+    public function index_returns_paginated_comments(): void
     {
-        $comments = Comment::factory()->count(3)->create();
+        Comment::factory()->count(3)->create();
 
-        $response = $this->get(route('comments.index'));
+        $response = $this->getJson(route('comments.index'));
 
         $response->assertOk();
-        $response->assertJsonStructure([]);
+        $response->assertJsonStructure([
+            'success',
+            'data' => [
+                '*' => ['id', 'content'],
+            ],
+        ]);
     }
 
     #[Test]
-    public function store_uses_form_request_validation(): void
+    public function show_returns_single_comment(): void
     {
-        $this->assertActionUsesFormRequest(
-            \App\Http\Controllers\Api\CommentController::class,
-            'store',
-            \App\Http\Requests\Api\CommentStoreRequest::class
-        );
+        $comment = Comment::factory()->create();
+
+        $response = $this->getJson(route('comments.show', $comment));
+
+        $response->assertOk();
+        $response->assertJsonStructure([
+            'success',
+            'data' => ['id', 'content'],
+        ]);
     }
 
     #[Test]
-    public function store_saves(): void
+    public function store_creates_comment_with_valid_data(): void
     {
         $post = Post::factory()->create();
-        $content = fake()->paragraphs(3, true);
         $user = User::factory()->create();
 
-        $response = $this->post(route('comments.store'), [
+        $data = [
+            'content' => 'Test comment',
             'post_id' => $post->id,
-            'content' => $content,
             'user_id' => $user->id,
-        ]);
+        ];
 
-        $comments = Comment::query()
-            ->where('post_id', $post->id)
-            ->where('content', $content)
-            ->where('user_id', $user->id)
-            ->get();
-        $this->assertCount(1, $comments);
-        $comment = $comments->first();
+        $response = $this->postJson(route('comments.store'), $data);
 
         $response->assertCreated();
-        $response->assertJsonStructure([]);
+        $this->assertDatabaseHas('comments', [
+            'content' => 'Test comment',
+            'post_id' => $post->id,
+        ]);
     }
 
     #[Test]
-    public function show_behaves_as_expected(): void
+    public function store_validates_required_fields(): void
     {
-        $comment = Comment::factory()->create();
+        $response = $this->postJson(route('comments.store'), []);
 
-        $response = $this->get(route('comments.show', $comment));
-
-        $response->assertOk();
-        $response->assertJsonStructure([]);
+        $response->assertUnprocessable();
     }
 
     #[Test]
-    public function update_uses_form_request_validation(): void
-    {
-        $this->assertActionUsesFormRequest(
-            \App\Http\Controllers\Api\CommentController::class,
-            'update',
-            \App\Http\Requests\Api\CommentUpdateRequest::class
-        );
-    }
-
-    #[Test]
-    public function update_behaves_as_expected(): void
+    public function update_modifies_comment_with_valid_data(): void
     {
         $comment = Comment::factory()->create();
         $post = Post::factory()->create();
-        $content = fake()->paragraphs(3, true);
         $user = User::factory()->create();
 
-        $response = $this->put(route('comments.update', $comment), [
+        $data = [
+            'content' => 'Updated comment',
             'post_id' => $post->id,
-            'content' => $content,
             'user_id' => $user->id,
-        ]);
+        ];
 
-        $comment->refresh();
+        $response = $this->putJson(route('comments.update', $comment), $data);
 
         $response->assertOk();
-        $response->assertJsonStructure([]);
-
-        $this->assertEquals($post->id, $comment->post_id);
-        $this->assertEquals($content, $comment->content);
-        $this->assertEquals($user->id, $comment->user_id);
+        $this->assertDatabaseHas('comments', [
+            'id' => $comment->id,
+            'content' => 'Updated comment',
+        ]);
     }
 
     #[Test]
-    public function destroy_deletes_and_responds_with(): void
+    public function destroy_deletes_comment(): void
     {
         $comment = Comment::factory()->create();
 
-        $response = $this->delete(route('comments.destroy', $comment));
+        $response = $this->deleteJson(route('comments.destroy', $comment));
 
-        $response->assertNoContent();
-
-        $this->assertModelMissing($comment);
+        $response->assertOk();
+        $this->assertSoftDeleted('comments', ['id' => $comment->id]);
     }
 }
