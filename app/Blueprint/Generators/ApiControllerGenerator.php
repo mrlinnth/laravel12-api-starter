@@ -61,7 +61,6 @@ class ApiControllerGenerator implements Generator
 
         // Add required imports
         $this->addImport('Illuminate\Http\JsonResponse');
-        $this->addImport('Illuminate\Http\Request');
         $this->addImport('App\Http\Controllers\Api\BaseApiController');
         $this->addImport('Spatie\QueryBuilder\AllowedFilter');
 
@@ -73,11 +72,12 @@ class ApiControllerGenerator implements Generator
             $this->addImport($resourceFqcn);
         }
 
-        // Add Form Request imports for store/update methods
+        // Add Data object import for store/update methods
         foreach ($controller->methods() as $methodName => $_statements) {
             if (in_array($methodName, ['store', 'update'])) {
-                $requestClass = $this->getFormRequestFqcn($controller->namespace(), $modelName, $methodName);
-                $this->addImport($requestClass);
+                $dataClass = $this->getDataFqcn($modelName);
+                $this->addImport($dataClass);
+                break; // Only need to add once
             }
         }
 
@@ -226,10 +226,10 @@ class ApiControllerGenerator implements Generator
             $method = str_replace('{{ modelName }}', Str::title(Str::snake($studlyModel, ' ')), $method);
             $method = str_replace('{{ resourceClass }}', $studlyModel.'Resource', $method);
 
-            // Add Form Request for store/update
+            // Add Data object for store/update
             if (in_array($name, ['store', 'update'])) {
-                $requestClass = $studlyModel.Str::studly($name).'Request';
-                $method = str_replace('{{ requestClass }}', $requestClass, $method);
+                $dataClass = $studlyModel.'Data';
+                $method = str_replace('{{ dataClass }}', $dataClass, $method);
             }
 
             if (! empty($methods)) {
@@ -289,6 +289,11 @@ class ApiControllerGenerator implements Generator
     protected function getFormRequestFqcn(string $namespace, string $modelName, string $method): string
     {
         return config('blueprint.namespace').'\\Http\\Requests\\'.$namespace.'\\'.Str::studly($modelName).Str::studly($method).'Request';
+    }
+
+    protected function getDataFqcn(string $modelName): string
+    {
+        return config('blueprint.namespace').'\\Data\\'.Str::studly($modelName).'Data';
     }
 
     protected function getPath(Controller $controller): string

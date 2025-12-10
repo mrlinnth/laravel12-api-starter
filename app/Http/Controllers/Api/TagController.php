@@ -2,12 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Requests\Api\TagStoreRequest;
-use App\Http\Requests\Api\TagUpdateRequest;
+use App\Data\TagData;
 use App\Http\Resources\Api\TagResource;
 use App\Models\Tag;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class TagController extends BaseApiController
 {
@@ -36,9 +34,9 @@ class TagController extends BaseApiController
         return ['posts'];
     }
 
-    public function store(TagStoreRequest $request): JsonResponse
+    public function store(TagData $data): JsonResponse
     {
-        $tag = Tag::create($request->validated());
+        $tag = Tag::create($data->toArray());
 
         return $this->createdResponse(
             new TagResource($tag),
@@ -46,9 +44,9 @@ class TagController extends BaseApiController
         );
     }
 
-    public function update(TagUpdateRequest $request, Tag $tag): JsonResponse
+    public function update(TagData $data, Tag $tag): JsonResponse
     {
-        $tag->update($request->validated());
+        $tag->update($data->toArray());
 
         return $this->successResponse(
             new TagResource($tag),
@@ -56,7 +54,7 @@ class TagController extends BaseApiController
         );
     }
 
-    public function destroy(Request $request, Tag $tag): JsonResponse
+    public function destroy(Tag $tag): JsonResponse
     {
         $tag->delete();
 
