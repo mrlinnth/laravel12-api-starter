@@ -188,6 +188,7 @@ return [
         'inertia_page' => \Blueprint\Generators\Statements\InertiaPageGenerator::class,
         'policy' => \Blueprint\Generators\PolicyGenerator::class,
         'api_controller' => \App\Blueprint\Generators\ApiControllerGenerator::class,
+        'api_data' => \App\Blueprint\Generators\ApiDataGenerator::class,
     ],
 
 ];

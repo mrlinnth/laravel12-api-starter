@@ -2,6 +2,10 @@
 
 A production-ready Laravel 12 REST API starter with automatic OpenAPI documentation, advanced query capabilities, comprehensive testing, and modern development tools.
 
+## Welcome to the Documentation
+
+This documentation is bundled inside the project itself under `/docs` directory.
+
 ## Quick Start
 
 ```bash
@@ -19,7 +23,7 @@ Access the application:
 - **API**: http://localhost:8000/api
 - **API Documentation**: http://localhost:8000/docs/api
 - **Documentation**: http://localhost:8000/readme
-- **Telescope**: http://localhost:8000/telescoper
+- **Telescope**: http://localhost:8000/telescope
 
 ---
 
@@ -174,34 +178,3 @@ All responses follow a consistent JSON structure:
 7. **Performance** - Query Builder prevents N+1 queries
 8. **Documentation Ready** - Works seamlessly with Scramble API docs
 9. **Rapid Development** - Complete API resource in one command
-
-## Documentation
-
-For detailed documentation, please refer to the following guides:
-
-- **[Features](docs/features.md)** - Core API features, developer experience, and query capabilities
-- **[Requirements](docs/requirements.md)** - System requirements and dependencies
-- **[Project Structure](docs/project-structure.md)** - Codebase architecture and patterns
-- **[Getting Started](docs/getting-started.md)** - Installation and environment setup
-- **[Development](docs/development.md)** - Development workflow, commands, and code style
-- **[BaseApiController](docs/base-api-controller.md)** - Deep dive into the base controller pattern
-- **[API Usage](docs/api-usage.md)** - API endpoints and query examples
-- **[Authentication](docs/authentication.md)** - Authentication and authorization setup
-- **[Testing](docs/testing.md)** - Testing strategy and best practices
-- **[Deployment](docs/deployment.md)** - Production deployment guide
-- **[Troubleshooting](docs/troubleshooting.md)** - Common issues and solutions
-- **[Contributing](docs/contributing.md)** - Contribution guidelines
-
-## License
-
-This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-
-### MIT License
-
-Copyright (c) 2025 Laravel 12 REST API Starter
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
