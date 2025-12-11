@@ -37,12 +37,10 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction
 # Create required directories
 RUN mkdir -p /var/log/supervisor /run/php
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
-
 # Copy configurations
 COPY docker/nginx.conf /etc/nginx/sites-available/default
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY docker/php-fpm-pool.conf /usr/local/etc/php-fpm.d/www.conf
 COPY docker/entrypoint.sh /entrypoint.sh
 
 # Make entrypoint executable
@@ -52,8 +50,11 @@ RUN chmod +x /entrypoint.sh
 RUN rm -f /etc/nginx/sites-enabled/default && \
     ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
+# Set permissions
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+
 # Expose port
-EXPOSE 8080
+EXPOSE 80
 
 # Use entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
