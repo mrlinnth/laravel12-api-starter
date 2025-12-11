@@ -2,6 +2,10 @@
 
 A production-ready Laravel 12 REST API starter with automatic OpenAPI documentation, advanced query capabilities, comprehensive testing, and modern development tools.
 
+**Demo** : https://api-starter.hiyan.xyz/docs/api
+
+**Documentation** : https://api-starter.hiyan.xyz/readme
+
 ## Welcome to the Documentation
 
 This documentation is bundled inside the project itself under `/docs` directory.
