@@ -4,6 +4,7 @@ FROM php:8.4-fpm-alpine
 RUN apk add --no-cache \
     git \
     curl \
+    icu-dev \
     libpng-dev \
     libzip-dev \
     zip \
@@ -13,7 +14,7 @@ RUN apk add --no-cache \
     supervisor
 
 # Install PHP extensions
-RUN docker-php-ext-install pdo pdo_mysql mbstring zip exif pcntl bcmath gd
+RUN docker-php-ext-install pdo pdo_mysql mbstring zip exif pcntl bcmath gd intl
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
