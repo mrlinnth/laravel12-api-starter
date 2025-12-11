@@ -50,6 +50,7 @@ RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cac
 
 # Run Laravel artisan commands
 RUN php artisan optimize:clear && \
+    php artisan storage:link && \
     php artisan migrate --force
 
 # Expose port
