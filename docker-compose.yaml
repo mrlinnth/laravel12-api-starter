@@ -1,0 +1,10 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/dokploy.dockerfile
+    networks:
+      - laravel
+
+networks:
+  laravel:
