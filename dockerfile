@@ -1,17 +1,17 @@
-FROM php:8.4-fpm-alpine
+FROM php:8.4-fpm
 
 # Install system dependencies
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y \
     git \
     curl \
-    icu-dev \
+    libicu-dev \
     libpng-dev \
     libzip-dev \
     zip \
     unzip \
-    oniguruma-dev \
     nginx \
-    supervisor
+    supervisor \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
 RUN docker-php-ext-install pdo pdo_mysql mbstring zip exif pcntl bcmath gd intl
@@ -29,16 +29,18 @@ COPY . .
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Create required directories
-RUN mkdir -p /var/log/supervisor /var/run
+RUN mkdir -p /var/log/supervisor /run/php
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Copy nginx config
-COPY docker/nginx.conf /etc/nginx/http.d/default.conf
-
-# Copy supervisor config
+# Copy configurations
+COPY docker/nginx.conf /etc/nginx/sites-available/default
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Remove default nginx config
+RUN rm -f /etc/nginx/sites-enabled/default && \
+    ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
 # Expose port
 EXPOSE 8080
