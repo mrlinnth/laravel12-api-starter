@@ -90,7 +90,7 @@ return [
      * ```
      */
     'servers' => [
-        'Live' => env('APP_URL', 'http://localhost'),
+        'Live' => env('APP_URL', 'http://localhost').'/api',
     ],
 
     /**
