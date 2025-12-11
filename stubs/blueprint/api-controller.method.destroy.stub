@@ -1,0 +1,6 @@
+    public function destroy({{ modelClass }} ${{ modelVariable }}): JsonResponse
+    {
+        ${{ modelVariable }}->delete();
+
+        return $this->deletedResponse('{{ modelName }} deleted successfully');
+    }

@@ -1,0 +1,9 @@
+    public function update({{ dataClass }} $data, {{ modelClass }} ${{ modelVariable }}): JsonResponse
+    {
+        ${{ modelVariable }}->update($data->toArray());
+
+        return $this->successResponse(
+            new {{ resourceClass }}(${{ modelVariable }}),
+            '{{ modelName }} updated successfully'
+        );
+    }

@@ -1,0 +1,35 @@
+<?php
+
+namespace {{ namespace }};
+
+{{ imports }}
+
+class {{ class }} extends BaseApiController
+{
+    protected function model(): string
+    {
+        return {{ modelClass }};
+    }
+
+    protected function resource(): string
+    {
+        return {{ resourceClass }};
+    }
+
+    protected function allowedFilters(): array
+    {
+        return {{ allowedFilters }};
+    }
+
+    protected function allowedSorts(): array
+    {
+        return {{ allowedSorts }};
+    }
+
+    protected function allowedIncludes(): array
+    {
+        return {{ allowedIncludes }};
+    }
+{{ methods }}
+}
+

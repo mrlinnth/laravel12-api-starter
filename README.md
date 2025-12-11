@@ -1,59 +1,211 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Laravel 12 REST API Starter
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A production-ready Laravel 12 REST API starter with automatic OpenAPI documentation, advanced query capabilities, comprehensive testing, and modern development tools.
 
-## About Laravel
+**Demo** : https://api-starter.hiyan.xyz/docs/api
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+**Documentation** : https://api-starter.hiyan.xyz/readme
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Quick Start
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+```bash
+# Clone the repository
+git clone https://github.com/mrlinnth/laravel12-api-starter
+cd laravel12-api-starter
 
-## Learning Laravel
+# Run setup script
+composer run setup
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+# Start development server
+composer run dev
+```
+Access the application:
+- **API**: http://localhost:8000/api
+- **API Documentation**: http://localhost:8000/docs/api
+- **Documentation**: http://localhost:8000/readme
+- **Telescope**: http://localhost:8000/telescoper
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-## Laravel Sponsors
+## Blueprint Code Generation
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Blueprint is used to rapidly scaffold API resources with intelligent defaults.
 
-### Premium Partners
+### Quick Blueprint Start
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Create a Blueprint YAML file and run:
 
-## Contributing
+```bash
+php artisan blueprint:build your-draft.yaml
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+This will generate:
+- Model with relationships and casts
+- Migration with proper column types
+- Factory with realistic fake data
+- API Controller with query builder support
+- Data DTO with type-safe properties
+- API Resource for response transformation
+- Feature test with assertions
 
-## Code of Conduct
+### Example Blueprint File
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```yaml
+models:
+  Product:
+    name: string:200
+    description: text nullable
+    price: decimal:10,2
+    stock: integer
+    status: enum:draft,active,archived
+    published_at: timestamp nullable
+    category_id: id foreign:categories
+    relationships:
+      belongsTo: Category
+      hasMany: Review
 
-## Security Vulnerabilities
+controllers:
+  Api/Product:
+    index:
+      query: all
+    show:
+      find: id
+    store:
+      validate: name, price, stock, status
+      save: product
+    update:
+      find: id
+      validate: name, price, stock, status
+      save: product
+    destroy:
+      delete: id
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## API Query Capabilities
+
+All API endpoints support advanced querying:
+
+### Filtering
+
+```bash
+# Exact match on enum
+GET /api/products?filter[status]=active
+
+# Exact match on foreign key
+GET /api/products?filter[category_id]=5
+
+# Partial match on text fields
+GET /api/products?filter[name]=laptop
+
+# Combine multiple filters
+GET /api/products?filter[status]=active&filter[category_id]=5&filter[name]=gaming
+```
+
+### Sorting
+
+```bash
+# Sort ascending
+GET /api/products?sort=name
+
+# Sort descending
+GET /api/products?sort=-published_at
+
+# Multiple sorts
+GET /api/products?sort=status,-created_at
+```
+
+### Including Relationships
+
+```bash
+# Single relationship
+GET /api/products?include=category
+
+# Multiple relationships
+GET /api/products?include=category,reviews
+
+# Nested relationships
+GET /api/products?include=category,reviews.author
+```
+
+### Pagination
+
+```bash
+# Default pagination (15 per page)
+GET /api/products
+
+# Custom per page
+GET /api/products?per_page=25
+
+# Specific page
+GET /api/products?page=2&per_page=25
+```
+### Combining Query Parameters
+
+```bash
+GET /api/products?filter[status]=active&include=category,reviews&sort=-published_at&per_page=20
+```
+### API Response Helpers
+
+Generated controllers use these ApiResponse trait methods:
+
+```php
+$this->successResponse($data, $message = '');           // 200 OK
+$this->createdResponse($data, $message = '');           // 201 Created
+$this->deletedResponse($message = '');                  // 200 OK
+$this->errorResponse($message, $code = 400, $errors);   // 4xx/5xx Error
+$this->validationErrorResponse($errors);                // 422 Unprocessable Entity
+```
+
+All responses follow a consistent JSON structure:
+
+```json
+{
+  "success": true,
+  "message": "Resource retrieved successfully",
+  "data": { ... }
+}
+```
+---
+
+## Benefits
+
+1. **Consistent API Structure** - All controllers follow the same pattern
+2. **Advanced Query Capabilities** - Filtering, sorting, includes out of the box
+3. **Type Safety** - Data DTOs provide automatic validation
+4. **DRY Principle** - BaseApiController eliminates code duplication
+5. **Intelligent Defaults** - Smart configuration based on model schema
+6. **Extensible** - Easy to customize per controller
+7. **Performance** - Query Builder prevents N+1 queries
+8. **Documentation Ready** - Works seamlessly with Scramble API docs
+9. **Rapid Development** - Complete API resource in one command
+
+## Documentation
+
+For detailed documentation, please refer to the following guides:
+
+- **[Features](docs/features.md)** - Core API features, developer experience, and query capabilities
+- **[Requirements](docs/requirements.md)** - System requirements and dependencies
+- **[Project Structure](docs/project-structure.md)** - Codebase architecture and patterns
+- **[Getting Started](docs/getting-started.md)** - Installation and environment setup
+- **[Development](docs/development.md)** - Development workflow, commands, and code style
+- **[BaseApiController](docs/base-api-controller.md)** - Deep dive into the base controller pattern
+- **[API Usage](docs/api-usage.md)** - API endpoints and query examples
+- **[Authentication](docs/authentication.md)** - Authentication and authorization setup
+- **[Testing](docs/testing.md)** - Testing strategy and best practices
+- **[Deployment](docs/deployment.md)** - Production deployment guide
+- **[Troubleshooting](docs/troubleshooting.md)** - Common issues and solutions
+- **[Contributing](docs/contributing.md)** - Contribution guidelines
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+### MIT License
+
+Copyright (c) 2025 Laravel 12 REST API Starter
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

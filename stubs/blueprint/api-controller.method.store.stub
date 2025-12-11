@@ -1,0 +1,9 @@
+    public function store({{ dataClass }} $data): JsonResponse
+    {
+        ${{ modelVariable }} = {{ modelClass }}::create($data->toArray());
+
+        return $this->createdResponse(
+            new {{ resourceClass }}(${{ modelVariable }}),
+            '{{ modelName }} created successfully'
+        );
+    }

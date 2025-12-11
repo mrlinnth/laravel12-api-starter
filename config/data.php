@@ -13,7 +13,7 @@ return [
      * convert the date to the correct timezone. If set to null no timezone will
      * be passed.
      */
-    'date_timezone' => null,
+    'date_timezone' => env('APP_TIMEZONE', null),
 
     /*
      * It is possible to enable certain features of the package, these would otherwise
@@ -48,7 +48,7 @@ return [
     'casts' => [
         DateTimeInterface::class => Spatie\LaravelData\Casts\DateTimeInterfaceCast::class,
         BackedEnum::class => Spatie\LaravelData\Casts\EnumCast::class,
-//        Enumerable::class => Spatie\LaravelData\Casts\EnumerableCast::class,
+        //        Enumerable::class => Spatie\LaravelData\Casts\EnumerableCast::class,
     ],
 
     /*
