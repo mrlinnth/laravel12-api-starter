@@ -1,17 +1,23 @@
 FROM php:8.4-fpm
 
-# Install system dependencies
+# Install system dependencies and build dependencies
 RUN apt-get update && apt-get install -y \
     git \
     curl \
     libicu-dev \
     libpng-dev \
     libzip-dev \
+    libonig-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
     zip \
     unzip \
     nginx \
     supervisor \
     && rm -rf /var/lib/apt/lists/*
+
+# Configure GD with jpeg and freetype support
+RUN docker-php-ext-configure gd --with-jpeg --with-freetype
 
 # Install PHP extensions
 RUN docker-php-ext-install pdo pdo_mysql mbstring zip exif pcntl bcmath gd intl
@@ -31,19 +37,21 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction
 # Create required directories
 RUN mkdir -p /var/log/supervisor /run/php
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
-
 # Copy configurations
 COPY docker/nginx.conf /etc/nginx/sites-available/default
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY docker/php-fpm-pool.conf /usr/local/etc/php-fpm.d/www.conf
+COPY docker/entrypoint.sh /entrypoint.sh
 
-# Remove default nginx config
+# Make entrypoint executable
+RUN chmod +x /entrypoint.sh
+
+# Remove default nginx config and create symlink
 RUN rm -f /etc/nginx/sites-enabled/default && \
     ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
 # Expose port
-EXPOSE 8080
+EXPOSE 80
 
-# Start supervisor
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+# Use entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
