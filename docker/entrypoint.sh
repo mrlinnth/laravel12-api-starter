@@ -18,8 +18,11 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# Set permissions
-chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+# Fix permissions for Laravel directories
+chown -R www-data:www-data /var/www/html
+chmod -R 755 /var/www/html
+chmod -R 775 /var/www/html/storage
+chmod -R 775 /var/www/html/bootstrap/cache
 
 # Start supervisor
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
