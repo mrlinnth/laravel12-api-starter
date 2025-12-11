@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Traits\ApiResponse;
+use Dedoc\Scramble\Attributes\PathParameter;
+use Dedoc\Scramble\Attributes\QueryParameter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -87,6 +89,12 @@ abstract class BaseApiController extends Controller
         return $query;
     }
 
+    #[QueryParameter('filter', description: 'Filter results by field values. Use filter[field]=value format. Available fields depend on the resource.', type: 'object', required: false, example: ['status' => 'published', 'user_id' => 1])]
+    #[QueryParameter('sort', description: 'Sort results by field. Prefix with - for descending order. Available fields depend on the resource.', type: 'string', required: false, example: '-created_at')]
+    #[QueryParameter('include', description: 'Include related resources. Comma-separated list. Available relationships depend on the resource.', type: 'string', required: false, example: 'user,comments')]
+    #[QueryParameter('per_page', description: 'Number of items per page for pagination.', type: 'integer', required: false, default: 15, example: 20)]
+    #[QueryParameter('page', description: 'Page number for pagination.', type: 'integer', required: false, default: 1, example: 1)]
+    #[QueryParameter('fields', description: 'Select specific fields to return. Use fields[resource]=field1,field2 format.', type: 'object', required: false, example: ['posts' => 'id,title,status'])]
     public function index(Request $request)
     {
         $query = $this->buildQuery();
@@ -99,6 +107,9 @@ abstract class BaseApiController extends Controller
         );
     }
 
+    #[PathParameter('id', description: 'The ID of the resource to retrieve.', type: 'integer', example: 1)]
+    #[QueryParameter('include', description: 'Include related resources. Comma-separated list. Available relationships depend on the resource.', type: 'string', required: false, example: 'user,comments')]
+    #[QueryParameter('fields', description: 'Select specific fields to return. Use fields[resource]=field1,field2 format.', type: 'object', required: false, example: ['posts' => 'id,title,status'])]
     public function show(Request $request, $id)
     {
         $query = $this->buildQuery();

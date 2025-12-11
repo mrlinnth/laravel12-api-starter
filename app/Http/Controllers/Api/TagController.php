@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Data\TagData;
 use App\Http\Resources\Api\TagResource;
 use App\Models\Tag;
+use Dedoc\Scramble\Attributes\BodyParameter;
+use Dedoc\Scramble\Attributes\PathParameter;
 use Illuminate\Http\JsonResponse;
 
 class TagController extends BaseApiController
@@ -34,6 +36,7 @@ class TagController extends BaseApiController
         return ['posts'];
     }
 
+    #[BodyParameter('title', description: 'The title of the tag. Must be unique.', type: 'string', required: true, example: 'Laravel')]
     public function store(TagData $data): JsonResponse
     {
         $tag = Tag::create($data->toArray());
@@ -44,6 +47,8 @@ class TagController extends BaseApiController
         );
     }
 
+    #[PathParameter('tag', description: 'The tag to update.', type: 'integer', example: 1)]
+    #[BodyParameter('title', description: 'The title of the tag. Must be unique.', type: 'string', required: true, example: 'PHP')]
     public function update(TagData $data, Tag $tag): JsonResponse
     {
         $tag->update($data->toArray());
@@ -54,6 +59,7 @@ class TagController extends BaseApiController
         );
     }
 
+    #[PathParameter('tag', description: 'The tag to delete.', type: 'integer', example: 1)]
     public function destroy(Tag $tag): JsonResponse
     {
         $tag->delete();

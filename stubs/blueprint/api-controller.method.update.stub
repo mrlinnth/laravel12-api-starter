@@ -1,3 +1,4 @@
+{{ updateAttributes }}
     public function update({{ dataClass }} $data, {{ modelClass }} ${{ modelVariable }}): JsonResponse
     {
         ${{ modelVariable }}->update($data->toArray());

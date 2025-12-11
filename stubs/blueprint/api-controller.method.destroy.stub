@@ -1,3 +1,4 @@
+{{ destroyAttributes }}
     public function destroy({{ modelClass }} ${{ modelVariable }}): JsonResponse
     {
         ${{ modelVariable }}->delete();

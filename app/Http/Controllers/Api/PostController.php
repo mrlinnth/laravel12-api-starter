@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Data\PostData;
 use App\Http\Resources\Api\PostResource;
 use App\Models\Post;
+use Dedoc\Scramble\Attributes\BodyParameter;
+use Dedoc\Scramble\Attributes\PathParameter;
 use Illuminate\Http\JsonResponse;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -40,6 +42,11 @@ class PostController extends BaseApiController
         return ['user', 'comments', 'tags'];
     }
 
+    #[BodyParameter('title', description: 'The title of the post.', type: 'string', required: true, example: 'My First Blog Post')]
+    #[BodyParameter('content', description: 'The content of the post.', type: 'string', required: true, example: 'This is the content of my blog post...')]
+    #[BodyParameter('status', description: 'The status of the post.', type: 'string', required: true, example: 'draft')]
+    #[BodyParameter('user_id', description: 'The ID of the user creating the post.', type: 'integer', required: true, example: 1)]
+    #[BodyParameter('published_at', description: 'The date and time when the post was published.', type: 'string', format: 'date-time', required: false, example: '2025-12-11T10:00:00Z')]
     public function store(PostData $data): JsonResponse
     {
         $post = Post::create($data->toArray());
@@ -50,6 +57,12 @@ class PostController extends BaseApiController
         );
     }
 
+    #[PathParameter('post', description: 'The post to update.', type: 'integer', example: 1)]
+    #[BodyParameter('title', description: 'The title of the post.', type: 'string', required: true, example: 'Updated Blog Post Title')]
+    #[BodyParameter('content', description: 'The content of the post.', type: 'string', required: true, example: 'This is the updated content...')]
+    #[BodyParameter('status', description: 'The status of the post.', type: 'string', required: true, example: 'published')]
+    #[BodyParameter('user_id', description: 'The ID of the user who owns the post.', type: 'integer', required: true, example: 1)]
+    #[BodyParameter('published_at', description: 'The date and time when the post was published.', type: 'string', format: 'date-time', required: false, example: '2025-12-11T10:00:00Z')]
     public function update(PostData $data, Post $post): JsonResponse
     {
         $post->update($data->toArray());
@@ -60,6 +73,7 @@ class PostController extends BaseApiController
         );
     }
 
+    #[PathParameter('post', description: 'The post to delete.', type: 'integer', example: 1)]
     public function destroy(Post $post): JsonResponse
     {
         $post->delete();
