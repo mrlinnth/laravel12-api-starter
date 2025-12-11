@@ -1,19 +1,43 @@
-FROM serversideup/php:8.4-fpm-nginx
+FROM php:8.4-fpm-alpine
 
-USER root
+# Install system dependencies
+RUN apk add --no-cache \
+    git \
+    curl \
+    libpng-dev \
+    libzip-dev \
+    zip \
+    unzip \
+    oniguruma-dev \
+    nginx \
+    supervisor
 
-# Install intl extension using the helper script provided by serversideup
-RUN install-php-extensions intl
+# Install PHP extensions
+RUN docker-php-ext-install pdo pdo_mysql mbstring zip exif pcntl bcmath gd
 
-WORKDIR /var/www/html
-
-COPY --chown=www-data:www-data . .
-
+# Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+# Set working directory
+WORKDIR /var/www/html
+
+# Copy application files
+COPY . .
+
+# Install dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+# Set permissions
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
-USER www-data
+# Copy nginx config
+COPY docker/nginx.conf /etc/nginx/http.d/default.conf
+
+# Copy supervisor config
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Expose port
+EXPOSE 8080
+
+# Start supervisor
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
