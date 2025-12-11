@@ -25,17 +25,6 @@ RUN docker-php-ext-install pdo pdo_mysql mbstring zip exif pcntl bcmath gd intl
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Create required directories
-RUN mkdir -p /var/log/supervisor /run/php
-
-# Copy configurations
-COPY docker/nginx.conf /etc/nginx/sites-available/default
-COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-
-# Remove default nginx config and create symlink
-RUN rm -f /etc/nginx/sites-enabled/default && \
-    ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
-
 # Set working directory
 WORKDIR /var/www/html
 
@@ -45,16 +34,26 @@ COPY . .
 # Install dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
+# Create required directories
+RUN mkdir -p /var/log/supervisor /run/php
+
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Run Laravel artisan commands
-RUN php artisan optimize:clear && \
-    php artisan storage:link && \
-    php artisan migrate --force
+# Copy configurations
+COPY docker/nginx.conf /etc/nginx/sites-available/default
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY docker/entrypoint.sh /entrypoint.sh
+
+# Make entrypoint executable
+RUN chmod +x /entrypoint.sh
+
+# Remove default nginx config and create symlink
+RUN rm -f /etc/nginx/sites-enabled/default && \
+    ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
 # Expose port
 EXPOSE 8080
 
-# Start supervisor
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+# Use entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
