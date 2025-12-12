@@ -1,3 +1,10 @@
+    /**
+     * Store a newly created {{ modelNameSingular }}.
+     *
+     * @status 201
+     *
+     * @response array{success: bool, message: string, data: {{ resourceClassName }}}
+     */
 {{ storeAttributes }}
     public function store({{ dataClass }} $data): JsonResponse
     {

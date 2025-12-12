@@ -19,7 +19,6 @@ class PostResource extends JsonResource
             'status' => $this->status,
             'user_id' => $this->user_id,
             'published_at' => $this->published_at,
-            'deleted_at' => $this->deleted_at,
             'comments' => CommentCollection::make($this->whenLoaded('comments')),
             'tags' => TagCollection::make($this->whenLoaded('tags')),
             'user' => UserResource::make($this->whenLoaded('user')),

@@ -89,6 +89,11 @@ abstract class BaseApiController extends Controller
         return $query;
     }
 
+    /**
+     * Display a paginated listing of the resource.
+     *
+     * @response array{success: bool, data: array, links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, path: string, per_page: int, to: int|null, total: int}}
+     */
     #[QueryParameter('filter', description: 'Filter results by field values. Use filter[field]=value format. Available fields depend on the resource.', type: 'object', required: false, example: ['status' => 'published', 'user_id' => 1])]
     #[QueryParameter('sort', description: 'Sort results by field. Prefix with - for descending order. Available fields depend on the resource.', type: 'string', required: false, example: '-created_at')]
     #[QueryParameter('include', description: 'Include related resources. Comma-separated list. Available relationships depend on the resource.', type: 'string', required: false, example: 'user,comments')]
@@ -107,6 +112,11 @@ abstract class BaseApiController extends Controller
         );
     }
 
+    /**
+     * Display the specified resource.
+     *
+     * @response array{success: bool, data: array}
+     */
     #[PathParameter('id', description: 'The ID of the resource to retrieve.', type: 'integer', example: 1)]
     #[QueryParameter('include', description: 'Include related resources. Comma-separated list. Available relationships depend on the resource.', type: 'string', required: false, example: 'user,comments')]
     #[QueryParameter('fields', description: 'Select specific fields to return. Use fields[resource]=field1,field2 format.', type: 'object', required: false, example: ['posts' => 'id,title,status'])]
