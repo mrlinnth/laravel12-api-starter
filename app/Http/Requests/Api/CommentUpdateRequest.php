@@ -23,7 +23,6 @@ class CommentUpdateRequest extends FormRequest
             'post_id' => ['required', 'integer', 'exists:posts,id'],
             'content' => ['required', 'string'],
             'user_id' => ['required', 'integer', 'exists:users,id'],
-            'deleted_at' => ['nullable'],
         ];
     }
 }

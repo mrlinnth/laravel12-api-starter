@@ -424,6 +424,19 @@ php artisan queue:restart
 php artisan queue:flush
 ```
 
+### Resource Management
+
+```bash
+# Delete all files related to an API resource
+php artisan project:delete-resource Comment
+
+# This command will:
+# - Show a warning and require confirmation
+# - Delete Data, Controller, Requests, Resources, Model, Factory, and Seeder files
+# - Display list of deleted files
+# - Show manual cleanup instructions for migrations, routes, and references
+```
+
 ## Code Style
 
 This project uses **Laravel Pint** for code formatting, enforcing PSR-12 coding standards with Laravel-specific conventions.

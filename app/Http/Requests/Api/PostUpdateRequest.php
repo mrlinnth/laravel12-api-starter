@@ -25,7 +25,6 @@ class PostUpdateRequest extends FormRequest
             'status' => ['required', 'in:draft,published,archived'],
             'user_id' => ['required', 'integer', 'exists:users,id'],
             'published_at' => ['nullable'],
-            'deleted_at' => ['nullable'],
         ];
     }
 }

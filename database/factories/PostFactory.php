@@ -15,10 +15,9 @@ class PostFactory extends Factory
         return [
             'title' => fake()->sentence(4),
             'content' => fake()->paragraphs(3, true),
-            'status' => fake()->randomElement(['draft', 'published', 'archived']),
+            'status' => fake()->randomElement(["draft","published","archived"]),
             'user_id' => User::factory(),
             'published_at' => fake()->dateTime(),
-            'deleted_at' => fake()->dateTime(),
         ];
     }
 }

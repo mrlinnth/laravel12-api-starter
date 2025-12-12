@@ -1,3 +1,9 @@
+    /**
+     * Update the specified {{ modelNameSingular }}.
+     *
+     * @response array{success: bool, message: string, data: {{ resourceClassName }}}
+     */
+{{ updateAttributes }}
     public function update({{ dataClass }} $data, {{ modelClass }} ${{ modelVariable }}): JsonResponse
     {
         ${{ modelVariable }}->update($data->toArray());

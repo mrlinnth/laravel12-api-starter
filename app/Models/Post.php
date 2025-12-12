@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\PostStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,10 +34,8 @@ class Post extends Model
     {
         return [
             'id' => 'integer',
-            'status' => PostStatus::class,
             'user_id' => 'integer',
-            'published_at' => 'immutable_datetime',
-            'deleted_at' => 'immutable_datetime',
+            'published_at' => 'timestamp',
         ];
     }
 

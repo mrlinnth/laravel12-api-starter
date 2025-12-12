@@ -60,8 +60,10 @@ class ApiControllerGenerator implements Generator
         $model = $this->tree->modelForContext($modelName);
 
         // Add required imports
+        $this->addImport('Illuminate\Http\Request');
         $this->addImport('Illuminate\Http\JsonResponse');
         $this->addImport('App\Http\Controllers\Api\BaseApiController');
+        $this->addImport('Dedoc\Scramble\Attributes\QueryParameter');
         $this->addImport('Spatie\QueryBuilder\AllowedFilter');
 
         if ($model) {
@@ -72,13 +74,29 @@ class ApiControllerGenerator implements Generator
             $this->addImport($resourceFqcn);
         }
 
-        // Add Data object import for store/update methods
+        // Add Data object import and Scramble attributes for store/update/destroy methods
+        $hasBodyParams = false;
+        $hasPathParams = false;
+
         foreach ($controller->methods() as $methodName => $_statements) {
             if (in_array($methodName, ['store', 'update'])) {
                 $dataClass = $this->getDataFqcn($modelName);
                 $this->addImport($dataClass);
-                break; // Only need to add once
+                $hasBodyParams = true;
             }
+
+            if (in_array($methodName, ['update', 'destroy'])) {
+                $hasPathParams = true;
+            }
+        }
+
+        // Add Scramble attribute imports if needed
+        if ($hasBodyParams) {
+            $this->addImport('Dedoc\Scramble\Attributes\BodyParameter');
+        }
+
+        if ($hasPathParams) {
+            $this->addImport('Dedoc\Scramble\Attributes\PathParameter');
         }
 
         $path = $this->getPath($controller);
@@ -91,26 +109,48 @@ class ApiControllerGenerator implements Generator
     protected function populateStub(string $stub, Controller $controller, $model): string
     {
         $modelName = Str::singular($controller->prefix());
+        $studlyModel = Str::studly($modelName);
 
         $stub = str_replace('{{ namespace }}', $controller->fullyQualifiedNamespace(), $stub);
         $stub = str_replace('{{ class }}', $controller->className(), $stub);
-        $stub = str_replace('{{ model }}', Str::studly($modelName), $stub);
-        $stub = str_replace('{{ modelClass }}', Str::studly($modelName).'::class', $stub);
-        $stub = str_replace('{{ resourceClass }}', Str::studly($modelName).'Resource::class', $stub);
+        $stub = str_replace('{{ model }}', $studlyModel, $stub);
+        $stub = str_replace('{{ modelClass }}', $studlyModel . '::class', $stub);
+        $stub = str_replace('{{ resourceClass }}', $studlyModel . 'Resource::class', $stub);
+
+        // Add new template variables for Scramble documentation
+        $stub = str_replace('{{ resourceClassName }}', $studlyModel . 'Resource', $stub);
+        $stub = str_replace('{{ modelNameSingular }}', Str::lower($modelName), $stub);
+        $stub = str_replace('{{ modelNamePlural }}', Str::lower(Str::plural($modelName)), $stub);
 
         // Generate allowed filters from model columns
-        $stub = str_replace('{{ allowedFilters }}', $this->buildAllowedFilters($model), $stub);
+        $allowedFilters = $this->buildAllowedFilters($model);
+        $stub = str_replace('{{ allowedFilters }}', $allowedFilters, $stub);
 
         // Generate allowed sorts from model columns
-        $stub = str_replace('{{ allowedSorts }}', $this->buildAllowedSorts($model), $stub);
+        $allowedSorts = $this->buildAllowedSorts($model);
+        $stub = str_replace('{{ allowedSorts }}', $allowedSorts, $stub);
 
         // Generate allowed includes from relationships
-        $stub = str_replace('{{ allowedIncludes }}', $this->buildAllowedIncludes($model), $stub);
+        $allowedIncludes = $this->buildAllowedIncludes($model);
+        $stub = str_replace('{{ allowedIncludes }}', $allowedIncludes, $stub);
+
+        // Generate query parameter descriptions and examples
+        $stub = str_replace('{{ filterFieldsDescription }}', $this->buildFilterFieldsDescription($model), $stub);
+        $stub = str_replace('{{ sortFieldsDescription }}', $this->buildSortFieldsDescription($model), $stub);
+        $stub = str_replace('{{ includeFieldsDescription }}', $this->buildIncludeFieldsDescription($model), $stub);
+        $stub = str_replace('{{ filterExample }}', $this->buildFilterExample($model), $stub);
+        $stub = str_replace('{{ sortExample }}', $this->buildSortExample($model), $stub);
+        $stub = str_replace('{{ includeExample }}', $this->buildIncludeExample($model), $stub);
 
         // Generate CRUD methods
         $stub = str_replace('{{ methods }}', $this->buildApiMethods($controller, $modelName), $stub);
 
         $stub = str_replace('{{ imports }}', $this->buildImports(), $stub);
+
+        // Add missing imports for index and show methods
+        $this->addImport('Illuminate\Http\Request');
+        $this->addImport('Dedoc\Scramble\Attributes\QueryParameter');
+        $this->addImport('Dedoc\Scramble\Attributes\PathParameter');
 
         return $stub;
     }
@@ -205,6 +245,7 @@ class ApiControllerGenerator implements Generator
         $methods = '';
         $camelModel = Str::camel($modelName);
         $studlyModel = Str::studly($modelName);
+        $model = $this->tree->modelForContext($modelName);
 
         // Only generate store, update, destroy (index and show are in BaseApiController)
         foreach ($controller->methods() as $name => $_statements) {
@@ -224,13 +265,19 @@ class ApiControllerGenerator implements Generator
             $method = str_replace('{{ modelVariable }}', $camelModel, $stub);
             $method = str_replace('{{ modelClass }}', $studlyModel, $method);
             $method = str_replace('{{ modelName }}', Str::title(Str::snake($studlyModel, ' ')), $method);
-            $method = str_replace('{{ resourceClass }}', $studlyModel.'Resource', $method);
+            $method = str_replace('{{ resourceClass }}', $studlyModel . 'Resource', $method);
+            $method = str_replace('{{ resourceClassName }}', $studlyModel . 'Resource', $method);
+            $method = str_replace('{{ modelNameSingular }}', Str::lower($modelName), $method);
 
             // Add Data object for store/update
             if (in_array($name, ['store', 'update'])) {
-                $dataClass = $studlyModel.'Data';
+                $dataClass = $studlyModel . 'Data';
                 $method = str_replace('{{ dataClass }}', $dataClass, $method);
             }
+
+            // Add PHPDoc attributes for Scramble
+            $attributes = $this->generateAttributesForMethod($name, $model, $camelModel);
+            $method = str_replace("{{ {$name}Attributes }}", $attributes, $method);
 
             if (! empty($methods)) {
                 $methods .= PHP_EOL;
@@ -238,7 +285,7 @@ class ApiControllerGenerator implements Generator
             $methods .= $method;
         }
 
-        return empty($methods) ? '' : PHP_EOL.$methods;
+        return empty($methods) ? '' : PHP_EOL . $methods;
     }
 
     protected function formatArray(array $items, bool $quoted = false): string
@@ -248,14 +295,14 @@ class ApiControllerGenerator implements Generator
         }
 
         if ($quoted) {
-            $items = array_map(fn ($item) => "'{$item}'", $items);
+            $items = array_map(fn($item) => "'{$item}'", $items);
         }
 
         if (count($items) === 1) {
-            return '['.$items[0].']';
+            return '[' . $items[0] . ']';
         }
 
-        return '['.PHP_EOL.'            '.implode(','.PHP_EOL.'            ', $items).','.PHP_EOL.'        ]';
+        return '[' . PHP_EOL . '            ' . implode(',' . PHP_EOL . '            ', $items) . ',' . PHP_EOL . '        ]';
     }
 
     protected function addImport(string $class): void
@@ -267,7 +314,7 @@ class ApiControllerGenerator implements Generator
 
     protected function removeImport(string $class): void
     {
-        $this->imports = array_filter($this->imports, fn ($import) => $import !== $class);
+        $this->imports = array_filter($this->imports, fn($import) => $import !== $class);
     }
 
     protected function buildImports(): string
@@ -278,22 +325,22 @@ class ApiControllerGenerator implements Generator
 
         sort($this->imports);
 
-        return implode(PHP_EOL, array_map(fn ($import) => "use {$import};", $this->imports));
+        return implode(PHP_EOL, array_map(fn($import) => "use {$import};", $this->imports));
     }
 
     protected function getResourceFqcn(string $namespace, string $modelName): string
     {
-        return config('blueprint.namespace').'\\Http\\Resources\\'.$namespace.'\\'.Str::studly($modelName).'Resource';
+        return config('blueprint.namespace') . '\\Http\\Resources\\' . $namespace . '\\' . Str::studly($modelName) . 'Resource';
     }
 
     protected function getFormRequestFqcn(string $namespace, string $modelName, string $method): string
     {
-        return config('blueprint.namespace').'\\Http\\Requests\\'.$namespace.'\\'.Str::studly($modelName).Str::studly($method).'Request';
+        return config('blueprint.namespace') . '\\Http\\Requests\\' . $namespace . '\\' . Str::studly($modelName) . Str::studly($method) . 'Request';
     }
 
     protected function getDataFqcn(string $modelName): string
     {
-        return config('blueprint.namespace').'\\Data\\'.Str::studly($modelName).'Data';
+        return config('blueprint.namespace') . '\\Data\\' . Str::studly($modelName) . 'Data';
     }
 
     protected function getPath(Controller $controller): string
@@ -310,5 +357,341 @@ class ApiControllerGenerator implements Generator
         }
 
         $this->filesystem->put($path, $content);
+    }
+
+    /**
+     * Generate Scramble PHPDoc attributes for a method.
+     */
+    protected function generateAttributesForMethod(string $methodName, $model, string $modelVariable): string
+    {
+        if (! $model) {
+            return '';
+        }
+
+        $attributes = [];
+
+        // Add PathParameter for update and destroy methods
+        if (in_array($methodName, ['update', 'destroy'])) {
+            $description = $methodName === 'update'
+                ? "The {$modelVariable} to update."
+                : "The {$modelVariable} to delete.";
+
+            $attributes[] = "#[PathParameter('{$modelVariable}', description: '{$description}', type: 'integer', example: 1)]";
+        }
+
+        // Add BodyParameter attributes for store and update methods
+        if (in_array($methodName, ['store', 'update'])) {
+            $bodyParameters = $this->generateBodyParameters($model, $methodName);
+            $attributes = array_merge($attributes, $bodyParameters);
+        }
+
+        if (empty($attributes)) {
+            return '';
+        }
+
+        return '    ' . implode(PHP_EOL . '    ', $attributes) . PHP_EOL;
+    }
+
+    /**
+     * Generate BodyParameter attributes from model columns.
+     */
+    protected function generateBodyParameters($model, string $methodName): array
+    {
+        $parameters = [];
+
+        foreach ($model->columns() as $column) {
+            $columnName = $column->name();
+
+            // Skip auto-managed columns
+            if (in_array($columnName, ['id', 'created_at', 'updated_at', 'deleted_at'])) {
+                continue;
+            }
+
+            $dataType = $column->dataType();
+            $isNullable = $column->isNullable();
+            $required = ! $isNullable;
+
+            // Map Blueprint data type to Scramble type
+            $type = $this->mapDataTypeToScrambleType($dataType, $columnName);
+
+            // Generate description
+            $description = $this->generateColumnDescription($columnName, $methodName);
+
+            // Generate example value
+            $example = $this->generateExampleValue($columnName, $dataType, $column);
+
+            // Build the attribute
+            $attribute = "#[BodyParameter('{$columnName}', description: '{$description}', type: '{$type}'";
+
+            // Add format for date/time types
+            if (in_array($dataType, ['date', 'datetime', 'timestamp'])) {
+                $attribute .= ", format: 'date-time'";
+            }
+
+            $attribute .= ', required: ' . ($required ? 'true' : 'false');
+            $attribute .= ", example: {$example})]";
+
+            $parameters[] = $attribute;
+        }
+
+        return $parameters;
+    }
+
+    /**
+     * Map Blueprint data type to Scramble type.
+     */
+    protected function mapDataTypeToScrambleType(string $dataType, string $columnName = ''): string
+    {
+        // Foreign keys should always be integers
+        if (Str::endsWith($columnName, '_id')) {
+            return 'integer';
+        }
+
+        return match ($dataType) {
+            'string', 'text', 'longtext', 'enum' => 'string',
+            'integer', 'bigInteger', 'tinyInteger', 'smallInteger', 'mediumInteger', 'id' => 'integer',
+            'decimal', 'float', 'double' => 'number',
+            'boolean' => 'boolean',
+            'date', 'datetime', 'timestamp' => 'string',
+            'json', 'jsonb' => 'object',
+            default => 'string',
+        };
+    }
+
+    /**
+     * Generate a human-readable description for a column.
+     */
+    protected function generateColumnDescription(string $columnName, string $methodName): string
+    {
+        $action = $methodName === 'store' ? 'creating' : 'updating';
+        $humanName = Str::title(str_replace('_', ' ', $columnName));
+
+        if (Str::endsWith($columnName, '_id')) {
+            $relationName = Str::title(str_replace('_', ' ', Str::beforeLast($columnName, '_id')));
+
+            return "The ID of the {$relationName}.";
+        }
+
+        return "The {$humanName}.";
+    }
+
+    /**
+     * Generate an example value for a column.
+     */
+    protected function generateExampleValue(string $columnName, string $dataType, $column): string
+    {
+        // Handle specific column names
+        if ($columnName === 'email') {
+            return "'user@example.com'";
+        }
+
+        if ($columnName === 'password') {
+            return "'password123'";
+        }
+
+        if (Str::contains($columnName, 'url')) {
+            return "'https://example.com'";
+        }
+
+        if (Str::endsWith($columnName, '_id')) {
+            return '1';
+        }
+
+        // Handle by data type
+        $example = match ($dataType) {
+            'string', 'text', 'longtext' => $this->generateStringExample($columnName),
+            'integer', 'bigInteger', 'tinyInteger', 'smallInteger', 'mediumInteger' => $this->generateIntegerExample($columnName),
+            'decimal', 'float', 'double' => $this->generateDecimalExample($columnName),
+            'boolean' => 'true',
+            'enum' => $this->generateEnumExample($column),
+            'date', 'datetime', 'timestamp' => "'" . now()->toISOString() . "'",
+            'json', 'jsonb' => "'{}'",
+            default => $this->generateStringExample($columnName),
+        };
+
+        // Ensure we never return an empty string
+        return empty($example) || $example === "''" ? $this->generateStringExample($columnName) : $example;
+    }
+
+    /**
+     * Generate a string example based on column name.
+     */
+    protected function generateStringExample(string $columnName): string
+    {
+        return match (true) {
+            Str::contains($columnName, 'title') => "'Example Title'",
+            Str::contains($columnName, 'name') => "'Example Name'",
+            Str::contains($columnName, 'content') => "'This is example content for the article...'",
+            Str::contains($columnName, 'description') => "'This is a description...'",
+            Str::contains($columnName, 'excerpt') => "'Example excerpt'",
+            Str::contains($columnName, 'slug') => "'example-slug'",
+            Str::contains($columnName, 'code') => "'CODE123'",
+            default => "'Example {$columnName}'",
+        };
+    }
+
+    /**
+     * Generate an integer example based on column name.
+     */
+    protected function generateIntegerExample(string $columnName): string
+    {
+        return match (true) {
+            Str::contains($columnName, 'count') || Str::contains($columnName, 'quantity') || Str::contains($columnName, 'stock') => '10',
+            Str::contains($columnName, 'age') => '25',
+            Str::contains($columnName, 'year') => (string) now()->year,
+            default => '1',
+        };
+    }
+
+    /**
+     * Generate a decimal example based on column name.
+     */
+    protected function generateDecimalExample(string $columnName): string
+    {
+        return match (true) {
+            Str::contains($columnName, 'price') || Str::contains($columnName, 'amount') => '99.99',
+            Str::contains($columnName, 'rate') || Str::contains($columnName, 'percentage') => '0.85',
+            default => '1.00',
+        };
+    }
+
+    /**
+     * Generate an enum example from column attributes.
+     */
+    protected function generateEnumExample($column): string
+    {
+        // Try to get the first enum value from column attributes
+        $attributes = $column->attributes();
+
+        if (isset($attributes['values']) && is_array($attributes['values']) && count($attributes['values']) > 0) {
+            return "'{$attributes['values'][0]}'";
+        }
+
+        return "'draft'";
+    }
+
+    /**
+     * Build filter fields description for query parameters.
+     */
+    protected function buildFilterFieldsDescription($model): string
+    {
+        if (! $model) {
+            return '';
+        }
+
+        $filters = [];
+        foreach ($model->columns() as $column) {
+            $columnName = $column->name();
+            if (! in_array($columnName, ['id', 'created_at', 'updated_at', 'deleted_at'])) {
+                if (Str::endsWith($columnName, '_id') || $column->dataType() === 'enum') {
+                    $filters[] = $columnName;
+                } elseif (in_array($column->dataType(), ['string', 'text', 'longtext'])) {
+                    $filters[] = $columnName;
+                }
+            }
+        }
+
+        return empty($filters) ? '' : ' Available fields: ' . implode(', ', $filters);
+    }
+
+    /**
+     * Build sort fields description for query parameters.
+     */
+    protected function buildSortFieldsDescription($model): string
+    {
+        if (! $model) {
+            return ' Available fields: created_at, id';
+        }
+
+        $sorts = [];
+        foreach ($model->columns() as $column) {
+            $name = $column->name();
+            if (in_array($name, ['created_at', 'published_at', 'updated_at', 'title', 'name'])) {
+                $sorts[] = $name;
+            }
+        }
+
+        if (! in_array('id', $sorts)) {
+            $sorts[] = 'id';
+        }
+
+        return ' Available fields: ' . implode(', ', $sorts);
+    }
+
+    /**
+     * Build include fields description for query parameters.
+     */
+    protected function buildIncludeFieldsDescription($model): string
+    {
+        if (! $model || ! method_exists($model, 'relationships')) {
+            return '';
+        }
+
+        $includes = [];
+        foreach ($model->relationships() as $relationships) {
+            if (is_string($relationships)) {
+                $includes[] = Str::camel($relationships);
+            } elseif (is_array($relationships)) {
+                foreach ($relationships as $relationship) {
+                    $includes[] = Str::camel($relationship);
+                }
+            }
+        }
+
+        return empty($includes) ? '' : ' Available relationships: ' . implode(', ', array_unique($includes));
+    }
+
+    /**
+     * Build filter example for query parameters.
+     */
+    protected function buildFilterExample($model): string
+    {
+        if (! $model) {
+            return "[]";
+        }
+
+        $exampleKey = null;
+        foreach ($model->columns() as $column) {
+            $columnName = $column->name();
+            if (Str::endsWith($columnName, '_id')) {
+                $exampleKey = $columnName;
+                break;
+            }
+        }
+
+        return $exampleKey ? "['{$exampleKey}' => 1]" : "[]";
+    }
+
+    /**
+     * Build sort example for query parameters.
+     */
+    protected function buildSortExample($model): string
+    {
+        return "'-created_at'";
+    }
+
+    /**
+     * Build include example for query parameters.
+     */
+    protected function buildIncludeExample($model): string
+    {
+        if (! $model || ! method_exists($model, 'relationships')) {
+            return "''";
+        }
+
+        $includes = [];
+        foreach ($model->relationships() as $relationships) {
+            if (is_string($relationships)) {
+                $includes[] = Str::camel($relationships);
+            } elseif (is_array($relationships)) {
+                foreach ($relationships as $relationship) {
+                    $includes[] = Str::camel($relationship);
+                }
+            }
+        }
+
+        $uniqueIncludes = array_unique($includes);
+
+        return empty($uniqueIncludes) ? "''" : "'" . implode(',', array_slice($uniqueIncludes, 0, 2)) . "'";
     }
 }

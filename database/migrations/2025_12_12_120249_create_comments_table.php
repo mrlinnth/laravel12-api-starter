@@ -13,15 +13,13 @@ return new class extends Migration
     {
         Schema::disableForeignKeyConstraints();
 
-        Schema::create('posts', function (Blueprint $table) {
+        Schema::create('comments', function (Blueprint $table) {
             $table->id();
-            $table->string('title', 400);
+            $table->foreignId('post_id')->constrained();
             $table->longText('content');
-            $table->enum('status', ['draft', 'published', 'archived']);
             $table->foreignId('user_id')->constrained();
-            $table->timestamp('published_at')->nullable();
-            $table->timestamp('deleted_at')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::enableForeignKeyConstraints();
@@ -32,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('posts');
+        Schema::dropIfExists('comments');
     }
 };

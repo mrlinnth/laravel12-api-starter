@@ -1,0 +1,33 @@
+models:
+  Category:
+    title: string:400 unique
+
+  Product:
+    category_id: id foreign
+    name: string:200
+    description: text nullable
+    price: decimal:10,2
+    stock: integer
+    status: enum:draft,active,archived
+    published_at: timestamp nullable
+    softDeletes: true
+    relationships:
+      belongsTo: Category
+      hasMany: Review
+
+  Review:
+    product_id: id foreign
+    content: longtext
+    user_id: id foreign
+    relationships:
+      belongsTo: Product, User
+
+controllers:
+  Api/Category:
+    resource: api
+
+  Api/Product:
+    resource: api
+
+  Api/Review:
+    resource: api

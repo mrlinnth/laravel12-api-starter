@@ -17,7 +17,6 @@ class CommentFactory extends Factory
             'post_id' => Post::factory(),
             'content' => fake()->paragraphs(3, true),
             'user_id' => User::factory(),
-            'deleted_at' => fake()->dateTime(),
         ];
     }
 }
