@@ -74,12 +74,11 @@ class ApiResourceGenerator extends StatementGenerator implements Generator
         if ($isCollection) {
             $resourceClassName = str_replace('Collection', 'Resource', $resource->name());
             $collectsProperty = $this->buildCollectsProperty($resourceClassName);
-            $phpdoc = $this->buildCollectionPhpDoc($resourceClassName);
 
-            // Insert $collects property and PHPDoc before toArray method
+            // Insert $collects property and update PHPDoc before toArray method
             $stub = str_replace(
-                '    /**'.PHP_EOL.'     * Transform the {{ resource }} into an array.'.PHP_EOL.'     */',
-                $collectsProperty.PHP_EOL.PHP_EOL.$phpdoc.'     * Transform the resource collection into an array.'.PHP_EOL.'     *'.PHP_EOL.'     * @return array{data: '.$resourceClassName.'[]}', $stub);
+                '    /**'.PHP_EOL.'     * Transform the resource collection into an array.'.PHP_EOL.'     */',
+                $collectsProperty.PHP_EOL.PHP_EOL.'    /**'.PHP_EOL.'     * Transform the resource collection into an array.'.PHP_EOL.'     *'.PHP_EOL.'     * @return array{data: '.$resourceClassName.'[]}'.PHP_EOL.'     */', $stub);
         }
 
         $stub = str_replace('{{ body }}', $this->buildData($resource), $stub);
@@ -95,11 +94,6 @@ class ApiResourceGenerator extends StatementGenerator implements Generator
             .'     * @var string'.PHP_EOL
             .'     */'.PHP_EOL
             .'    public $collects = '.$resourceClassName.'::class;';
-    }
-
-    protected function buildCollectionPhpDoc(string $resourceClassName): string
-    {
-        return '    /**';
     }
 
     protected function buildData(ResourceStatement $resource): string
