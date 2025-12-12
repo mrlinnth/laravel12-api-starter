@@ -30,6 +30,33 @@ class {{ class }} extends BaseApiController
     {
         return {{ allowedIncludes }};
     }
+
+    /**
+     * Display a paginated listing of {{ modelNamePlural }}.
+     *
+     * @response array{success: bool, data: {{ resourceClassName }}[], links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, path: string, per_page: int, to: int|null, total: int}}
+     */
+    #[QueryParameter('filter', description: 'Filter results by field values. Use filter[field]=value format.{{ filterFieldsDescription }}', type: 'object', required: false, example: {{ filterExample }})]
+    #[QueryParameter('sort', description: 'Sort results by field. Prefix with - for descending order.{{ sortFieldsDescription }}', type: 'string', required: false, example: {{ sortExample }})]
+    #[QueryParameter('include', description: 'Include related resources. Comma-separated list.{{ includeFieldsDescription }}', type: 'string', required: false, example: {{ includeExample }})]
+    #[QueryParameter('per_page', description: 'Number of items per page for pagination.', type: 'integer', required: false, default: 15, example: 20)]
+    #[QueryParameter('page', description: 'Page number for pagination.', type: 'integer', required: false, default: 1, example: 1)]
+    public function index(Request $request): JsonResponse
+    {
+        return parent::index($request);
+    }
+
+    /**
+     * Display the specified {{ modelNameSingular }}.
+     *
+     * @response array{success: bool, data: {{ resourceClassName }}}
+     */
+    #[PathParameter('id', description: 'The ID of the {{ modelNameSingular }} to retrieve.', type: 'integer', example: 1)]
+    #[QueryParameter('include', description: 'Include related resources. Comma-separated list.{{ includeFieldsDescription }}', type: 'string', required: false, example: {{ includeExample }})]
+    public function show(Request $request, $id): JsonResponse
+    {
+        return parent::show($request, $id);
+    }
 {{ methods }}
 }
 

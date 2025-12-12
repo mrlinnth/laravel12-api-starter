@@ -107,26 +107,48 @@ class ApiControllerGenerator implements Generator
     protected function populateStub(string $stub, Controller $controller, $model): string
     {
         $modelName = Str::singular($controller->prefix());
+        $studlyModel = Str::studly($modelName);
 
         $stub = str_replace('{{ namespace }}', $controller->fullyQualifiedNamespace(), $stub);
         $stub = str_replace('{{ class }}', $controller->className(), $stub);
-        $stub = str_replace('{{ model }}', Str::studly($modelName), $stub);
-        $stub = str_replace('{{ modelClass }}', Str::studly($modelName).'::class', $stub);
-        $stub = str_replace('{{ resourceClass }}', Str::studly($modelName).'Resource::class', $stub);
+        $stub = str_replace('{{ model }}', $studlyModel, $stub);
+        $stub = str_replace('{{ modelClass }}', $studlyModel.'::class', $stub);
+        $stub = str_replace('{{ resourceClass }}', $studlyModel.'Resource::class', $stub);
+
+        // Add new template variables for Scramble documentation
+        $stub = str_replace('{{ resourceClassName }}', $studlyModel.'Resource', $stub);
+        $stub = str_replace('{{ modelNameSingular }}', Str::lower($modelName), $stub);
+        $stub = str_replace('{{ modelNamePlural }}', Str::lower(Str::plural($modelName)), $stub);
 
         // Generate allowed filters from model columns
-        $stub = str_replace('{{ allowedFilters }}', $this->buildAllowedFilters($model), $stub);
+        $allowedFilters = $this->buildAllowedFilters($model);
+        $stub = str_replace('{{ allowedFilters }}', $allowedFilters, $stub);
 
         // Generate allowed sorts from model columns
-        $stub = str_replace('{{ allowedSorts }}', $this->buildAllowedSorts($model), $stub);
+        $allowedSorts = $this->buildAllowedSorts($model);
+        $stub = str_replace('{{ allowedSorts }}', $allowedSorts, $stub);
 
         // Generate allowed includes from relationships
-        $stub = str_replace('{{ allowedIncludes }}', $this->buildAllowedIncludes($model), $stub);
+        $allowedIncludes = $this->buildAllowedIncludes($model);
+        $stub = str_replace('{{ allowedIncludes }}', $allowedIncludes, $stub);
+
+        // Generate query parameter descriptions and examples
+        $stub = str_replace('{{ filterFieldsDescription }}', $this->buildFilterFieldsDescription($model), $stub);
+        $stub = str_replace('{{ sortFieldsDescription }}', $this->buildSortFieldsDescription($model), $stub);
+        $stub = str_replace('{{ includeFieldsDescription }}', $this->buildIncludeFieldsDescription($model), $stub);
+        $stub = str_replace('{{ filterExample }}', $this->buildFilterExample($model), $stub);
+        $stub = str_replace('{{ sortExample }}', $this->buildSortExample($model), $stub);
+        $stub = str_replace('{{ includeExample }}', $this->buildIncludeExample($model), $stub);
 
         // Generate CRUD methods
         $stub = str_replace('{{ methods }}', $this->buildApiMethods($controller, $modelName), $stub);
 
         $stub = str_replace('{{ imports }}', $this->buildImports(), $stub);
+
+        // Add missing imports for index and show methods
+        $this->addImport('Illuminate\Http\Request');
+        $this->addImport('Dedoc\Scramble\Attributes\QueryParameter');
+        $this->addImport('Dedoc\Scramble\Attributes\PathParameter');
 
         return $stub;
     }
@@ -242,6 +264,8 @@ class ApiControllerGenerator implements Generator
             $method = str_replace('{{ modelClass }}', $studlyModel, $method);
             $method = str_replace('{{ modelName }}', Str::title(Str::snake($studlyModel, ' ')), $method);
             $method = str_replace('{{ resourceClass }}', $studlyModel.'Resource', $method);
+            $method = str_replace('{{ resourceClassName }}', $studlyModel.'Resource', $method);
+            $method = str_replace('{{ modelNameSingular }}', Str::lower($modelName), $method);
 
             // Add Data object for store/update
             if (in_array($name, ['store', 'update'])) {
@@ -542,5 +566,130 @@ class ApiControllerGenerator implements Generator
         }
 
         return "'draft'";
+    }
+
+    /**
+     * Build filter fields description for query parameters.
+     */
+    protected function buildFilterFieldsDescription($model): string
+    {
+        if (! $model) {
+            return '';
+        }
+
+        $filters = [];
+        foreach ($model->columns() as $column) {
+            $columnName = $column->name();
+            if (! in_array($columnName, ['id', 'created_at', 'updated_at', 'deleted_at'])) {
+                if (Str::endsWith($columnName, '_id') || $column->dataType() === 'enum') {
+                    $filters[] = $columnName;
+                } elseif (in_array($column->dataType(), ['string', 'text', 'longtext'])) {
+                    $filters[] = $columnName;
+                }
+            }
+        }
+
+        return empty($filters) ? '' : ' Available fields: '.implode(', ', $filters);
+    }
+
+    /**
+     * Build sort fields description for query parameters.
+     */
+    protected function buildSortFieldsDescription($model): string
+    {
+        if (! $model) {
+            return ' Available fields: created_at, id';
+        }
+
+        $sorts = [];
+        foreach ($model->columns() as $column) {
+            $name = $column->name();
+            if (in_array($name, ['created_at', 'published_at', 'updated_at', 'title', 'name'])) {
+                $sorts[] = $name;
+            }
+        }
+
+        if (! in_array('id', $sorts)) {
+            $sorts[] = 'id';
+        }
+
+        return ' Available fields: '.implode(', ', $sorts);
+    }
+
+    /**
+     * Build include fields description for query parameters.
+     */
+    protected function buildIncludeFieldsDescription($model): string
+    {
+        if (! $model || ! method_exists($model, 'relationships')) {
+            return '';
+        }
+
+        $includes = [];
+        foreach ($model->relationships() as $relationships) {
+            if (is_string($relationships)) {
+                $includes[] = Str::camel($relationships);
+            } elseif (is_array($relationships)) {
+                foreach ($relationships as $relationship) {
+                    $includes[] = Str::camel($relationship);
+                }
+            }
+        }
+
+        return empty($includes) ? '' : ' Available relationships: '.implode(', ', array_unique($includes));
+    }
+
+    /**
+     * Build filter example for query parameters.
+     */
+    protected function buildFilterExample($model): string
+    {
+        if (! $model) {
+            return "[]";
+        }
+
+        $example = [];
+        foreach ($model->columns() as $column) {
+            $columnName = $column->name();
+            if (Str::endsWith($columnName, '_id')) {
+                $example[$columnName] = 1;
+                break;
+            }
+        }
+
+        return empty($example) ? "[]" : json_encode($example);
+    }
+
+    /**
+     * Build sort example for query parameters.
+     */
+    protected function buildSortExample($model): string
+    {
+        return "'-created_at'";
+    }
+
+    /**
+     * Build include example for query parameters.
+     */
+    protected function buildIncludeExample($model): string
+    {
+        if (! $model || ! method_exists($model, 'relationships')) {
+            return "''";
+        }
+
+        $includes = [];
+        foreach ($model->relationships() as $relationships) {
+            if (is_string($relationships)) {
+                $includes[] = Str::camel($relationships);
+            } elseif (is_array($relationships)) {
+                foreach ($relationships as $relationship) {
+                    $includes[] = Str::camel($relationship);
+                }
+            }
+        }
+
+        $uniqueIncludes = array_unique($includes);
+
+        return empty($uniqueIncludes) ? "''" : "'".implode(',', array_slice($uniqueIncludes, 0, 2))."'";
     }
 }
