@@ -60,8 +60,10 @@ class ApiControllerGenerator implements Generator
         $model = $this->tree->modelForContext($modelName);
 
         // Add required imports
+        $this->addImport('Illuminate\Http\Request');
         $this->addImport('Illuminate\Http\JsonResponse');
         $this->addImport('App\Http\Controllers\Api\BaseApiController');
+        $this->addImport('Dedoc\Scramble\Attributes\QueryParameter');
         $this->addImport('Spatie\QueryBuilder\AllowedFilter');
 
         if ($model) {
@@ -112,11 +114,11 @@ class ApiControllerGenerator implements Generator
         $stub = str_replace('{{ namespace }}', $controller->fullyQualifiedNamespace(), $stub);
         $stub = str_replace('{{ class }}', $controller->className(), $stub);
         $stub = str_replace('{{ model }}', $studlyModel, $stub);
-        $stub = str_replace('{{ modelClass }}', $studlyModel.'::class', $stub);
-        $stub = str_replace('{{ resourceClass }}', $studlyModel.'Resource::class', $stub);
+        $stub = str_replace('{{ modelClass }}', $studlyModel . '::class', $stub);
+        $stub = str_replace('{{ resourceClass }}', $studlyModel . 'Resource::class', $stub);
 
         // Add new template variables for Scramble documentation
-        $stub = str_replace('{{ resourceClassName }}', $studlyModel.'Resource', $stub);
+        $stub = str_replace('{{ resourceClassName }}', $studlyModel . 'Resource', $stub);
         $stub = str_replace('{{ modelNameSingular }}', Str::lower($modelName), $stub);
         $stub = str_replace('{{ modelNamePlural }}', Str::lower(Str::plural($modelName)), $stub);
 
@@ -263,13 +265,13 @@ class ApiControllerGenerator implements Generator
             $method = str_replace('{{ modelVariable }}', $camelModel, $stub);
             $method = str_replace('{{ modelClass }}', $studlyModel, $method);
             $method = str_replace('{{ modelName }}', Str::title(Str::snake($studlyModel, ' ')), $method);
-            $method = str_replace('{{ resourceClass }}', $studlyModel.'Resource', $method);
-            $method = str_replace('{{ resourceClassName }}', $studlyModel.'Resource', $method);
+            $method = str_replace('{{ resourceClass }}', $studlyModel . 'Resource', $method);
+            $method = str_replace('{{ resourceClassName }}', $studlyModel . 'Resource', $method);
             $method = str_replace('{{ modelNameSingular }}', Str::lower($modelName), $method);
 
             // Add Data object for store/update
             if (in_array($name, ['store', 'update'])) {
-                $dataClass = $studlyModel.'Data';
+                $dataClass = $studlyModel . 'Data';
                 $method = str_replace('{{ dataClass }}', $dataClass, $method);
             }
 
@@ -283,7 +285,7 @@ class ApiControllerGenerator implements Generator
             $methods .= $method;
         }
 
-        return empty($methods) ? '' : PHP_EOL.$methods;
+        return empty($methods) ? '' : PHP_EOL . $methods;
     }
 
     protected function formatArray(array $items, bool $quoted = false): string
@@ -293,14 +295,14 @@ class ApiControllerGenerator implements Generator
         }
 
         if ($quoted) {
-            $items = array_map(fn ($item) => "'{$item}'", $items);
+            $items = array_map(fn($item) => "'{$item}'", $items);
         }
 
         if (count($items) === 1) {
-            return '['.$items[0].']';
+            return '[' . $items[0] . ']';
         }
 
-        return '['.PHP_EOL.'            '.implode(','.PHP_EOL.'            ', $items).','.PHP_EOL.'        ]';
+        return '[' . PHP_EOL . '            ' . implode(',' . PHP_EOL . '            ', $items) . ',' . PHP_EOL . '        ]';
     }
 
     protected function addImport(string $class): void
@@ -312,7 +314,7 @@ class ApiControllerGenerator implements Generator
 
     protected function removeImport(string $class): void
     {
-        $this->imports = array_filter($this->imports, fn ($import) => $import !== $class);
+        $this->imports = array_filter($this->imports, fn($import) => $import !== $class);
     }
 
     protected function buildImports(): string
@@ -323,22 +325,22 @@ class ApiControllerGenerator implements Generator
 
         sort($this->imports);
 
-        return implode(PHP_EOL, array_map(fn ($import) => "use {$import};", $this->imports));
+        return implode(PHP_EOL, array_map(fn($import) => "use {$import};", $this->imports));
     }
 
     protected function getResourceFqcn(string $namespace, string $modelName): string
     {
-        return config('blueprint.namespace').'\\Http\\Resources\\'.$namespace.'\\'.Str::studly($modelName).'Resource';
+        return config('blueprint.namespace') . '\\Http\\Resources\\' . $namespace . '\\' . Str::studly($modelName) . 'Resource';
     }
 
     protected function getFormRequestFqcn(string $namespace, string $modelName, string $method): string
     {
-        return config('blueprint.namespace').'\\Http\\Requests\\'.$namespace.'\\'.Str::studly($modelName).Str::studly($method).'Request';
+        return config('blueprint.namespace') . '\\Http\\Requests\\' . $namespace . '\\' . Str::studly($modelName) . Str::studly($method) . 'Request';
     }
 
     protected function getDataFqcn(string $modelName): string
     {
-        return config('blueprint.namespace').'\\Data\\'.Str::studly($modelName).'Data';
+        return config('blueprint.namespace') . '\\Data\\' . Str::studly($modelName) . 'Data';
     }
 
     protected function getPath(Controller $controller): string
@@ -387,7 +389,7 @@ class ApiControllerGenerator implements Generator
             return '';
         }
 
-        return '    '.implode(PHP_EOL.'    ', $attributes).PHP_EOL;
+        return '    ' . implode(PHP_EOL . '    ', $attributes) . PHP_EOL;
     }
 
     /**
@@ -426,7 +428,7 @@ class ApiControllerGenerator implements Generator
                 $attribute .= ", format: 'date-time'";
             }
 
-            $attribute .= ', required: '.($required ? 'true' : 'false');
+            $attribute .= ', required: ' . ($required ? 'true' : 'false');
             $attribute .= ", example: {$example})]";
 
             $parameters[] = $attribute;
@@ -502,7 +504,7 @@ class ApiControllerGenerator implements Generator
             'decimal', 'float', 'double' => $this->generateDecimalExample($columnName),
             'boolean' => 'true',
             'enum' => $this->generateEnumExample($column),
-            'date', 'datetime', 'timestamp' => "'".now()->toISOString()."'",
+            'date', 'datetime', 'timestamp' => "'" . now()->toISOString() . "'",
             'json', 'jsonb' => "'{}'",
             default => $this->generateStringExample($columnName),
         };
@@ -589,7 +591,7 @@ class ApiControllerGenerator implements Generator
             }
         }
 
-        return empty($filters) ? '' : ' Available fields: '.implode(', ', $filters);
+        return empty($filters) ? '' : ' Available fields: ' . implode(', ', $filters);
     }
 
     /**
@@ -613,7 +615,7 @@ class ApiControllerGenerator implements Generator
             $sorts[] = 'id';
         }
 
-        return ' Available fields: '.implode(', ', $sorts);
+        return ' Available fields: ' . implode(', ', $sorts);
     }
 
     /**
@@ -636,7 +638,7 @@ class ApiControllerGenerator implements Generator
             }
         }
 
-        return empty($includes) ? '' : ' Available relationships: '.implode(', ', array_unique($includes));
+        return empty($includes) ? '' : ' Available relationships: ' . implode(', ', array_unique($includes));
     }
 
     /**
@@ -690,6 +692,6 @@ class ApiControllerGenerator implements Generator
 
         $uniqueIncludes = array_unique($includes);
 
-        return empty($uniqueIncludes) ? "''" : "'".implode(',', array_slice($uniqueIncludes, 0, 2))."'";
+        return empty($uniqueIncludes) ? "''" : "'" . implode(',', array_slice($uniqueIncludes, 0, 2)) . "'";
     }
 }
