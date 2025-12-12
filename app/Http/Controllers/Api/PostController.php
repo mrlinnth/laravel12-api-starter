@@ -7,7 +7,9 @@ use App\Http\Resources\Api\PostResource;
 use App\Models\Post;
 use Dedoc\Scramble\Attributes\BodyParameter;
 use Dedoc\Scramble\Attributes\PathParameter;
+use Dedoc\Scramble\Attributes\QueryParameter;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class PostController extends BaseApiController
@@ -43,9 +45,38 @@ class PostController extends BaseApiController
     }
 
     /**
+     * Display a paginated listing of posts.
+     *
+     * @response array{success: bool, data: PostResource[], links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, path: string, per_page: int, to: int|null, total: int}}
+     */
+    #[QueryParameter('filter', description: 'Filter results by field values. Use filter[field]=value format. Available fields: status, user_id, title, content', type: 'object', required: false, example: ['status' => 'published', 'user_id' => 1])]
+    #[QueryParameter('sort', description: 'Sort results by field. Prefix with - for descending order. Available fields: created_at, published_at, title, id', type: 'string', required: false, example: '-created_at')]
+    #[QueryParameter('include', description: 'Include related resources. Comma-separated list. Available relationships: user, comments, tags', type: 'string', required: false, example: 'user,comments,tags')]
+    #[QueryParameter('per_page', description: 'Number of items per page for pagination.', type: 'integer', required: false, default: 15, example: 20)]
+    #[QueryParameter('page', description: 'Page number for pagination.', type: 'integer', required: false, default: 1, example: 1)]
+    public function index(Request $request): JsonResponse
+    {
+        return parent::index($request);
+    }
+
+    /**
+     * Display the specified post.
+     *
+     * @response array{success: bool, data: PostResource}
+     */
+    #[PathParameter('id', description: 'The ID of the post to retrieve.', type: 'integer', example: 1)]
+    #[QueryParameter('include', description: 'Include related resources. Comma-separated list. Available relationships: user, comments, tags', type: 'string', required: false, example: 'user,comments')]
+    public function show(Request $request, $id): JsonResponse
+    {
+        return parent::show($request, $id);
+    }
+
+    /**
      * Store a newly created post.
      *
-     * @response array{success: bool, message: string, data: array{id: int, title: string, content: string, status: string, user_id: int, published_at: string|null, created_at: string, updated_at: string}}
+     * @status 201
+     *
+     * @response array{success: bool, message: string, data: PostResource}
      */
     #[BodyParameter('title', description: 'The title of the post.', type: 'string', required: true, example: 'My First Blog Post')]
     #[BodyParameter('content', description: 'The content of the post.', type: 'string', required: true, example: 'This is the content of my blog post...')]
@@ -65,7 +96,7 @@ class PostController extends BaseApiController
     /**
      * Update the specified post.
      *
-     * @response array{success: bool, message: string, data: array{id: int, title: string, content: string, status: string, user_id: int, published_at: string|null, created_at: string, updated_at: string}}
+     * @response array{success: bool, message: string, data: PostResource}
      */
     #[PathParameter('post', description: 'The post to update.', type: 'integer', example: 1)]
     #[BodyParameter('title', description: 'The title of the post.', type: 'string', required: true, example: 'Updated Blog Post Title')]
