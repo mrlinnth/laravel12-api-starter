@@ -1,32 +1,33 @@
 models:
-  Tag:
+  Category:
     title: string:400 unique
 
-  Post:
-    title: string:400
-    content: longtext
-    status: enum:draft,published,archived
-    user_id: id foreign
-    published_at: nullable timestamp
-    relationships:
-      hasMany: Comment
-      belongsToMany: Tag
-      belongsTo: User
-
-  Comment:
-    post_id: id foreign
-    content: longtext
-    user_id: id foreign
+  Product:
+    category_id: id foreign
+    name: string:200
+    description: text nullable
+    price: decimal:10,2
+    stock: integer
+    status: enum:draft,active,archived
+    published_at: timestamp nullable
     softDeletes: true
     relationships:
-      belongsTo: Post, User
+      belongsTo: Category
+      hasMany: Review
 
-seeders: Tag, Post, Comment
+  Review:
+    product_id: id foreign
+    content: longtext
+    user_id: id foreign
+    relationships:
+      belongsTo: Product, User
 
 controllers:
-  Api\Tag:
+  Api/Category:
     resource: api
-  Api\Post:
+
+  Api/Product:
     resource: api
-  Api\Comment:
+
+  Api/Review:
     resource: api

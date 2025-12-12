@@ -56,33 +56,38 @@ This will generate:
 
 ```yaml
 models:
+  Category:
+    title: string:400 unique
+
   Product:
+    category_id: id foreign
     name: string:200
     description: text nullable
     price: decimal:10,2
     stock: integer
     status: enum:draft,active,archived
     published_at: timestamp nullable
-    category_id: id foreign:categories
+    softDeletes: true
     relationships:
       belongsTo: Category
       hasMany: Review
 
+  Review:
+    product_id: id foreign
+    content: longtext
+    user_id: id foreign
+    relationships:
+      belongsTo: Product, User
+
 controllers:
+  Api/Category:
+    resource: api
+
   Api/Product:
-    index:
-      query: all
-    show:
-      find: id
-    store:
-      validate: name, price, stock, status
-      save: product
-    update:
-      find: id
-      validate: name, price, stock, status
-      save: product
-    destroy:
-      delete: id
+    resource: api
+
+  Api/Review:
+    resource: api
 ```
 
 ## API Query Capabilities
@@ -128,7 +133,7 @@ GET /api/products?include=category
 GET /api/products?include=category,reviews
 
 # Nested relationships
-GET /api/products?include=category,reviews.author
+GET /api/products?include=category,reviews.user
 ```
 
 ### Pagination
