@@ -42,6 +42,11 @@ class PostController extends BaseApiController
         return ['user', 'comments', 'tags'];
     }
 
+    /**
+     * Store a newly created post.
+     *
+     * @response array{success: bool, message: string, data: array{id: int, title: string, content: string, status: string, user_id: int, published_at: string|null, created_at: string, updated_at: string}}
+     */
     #[BodyParameter('title', description: 'The title of the post.', type: 'string', required: true, example: 'My First Blog Post')]
     #[BodyParameter('content', description: 'The content of the post.', type: 'string', required: true, example: 'This is the content of my blog post...')]
     #[BodyParameter('status', description: 'The status of the post.', type: 'string', required: true, example: 'draft')]
@@ -57,6 +62,11 @@ class PostController extends BaseApiController
         );
     }
 
+    /**
+     * Update the specified post.
+     *
+     * @response array{success: bool, message: string, data: array{id: int, title: string, content: string, status: string, user_id: int, published_at: string|null, created_at: string, updated_at: string}}
+     */
     #[PathParameter('post', description: 'The post to update.', type: 'integer', example: 1)]
     #[BodyParameter('title', description: 'The title of the post.', type: 'string', required: true, example: 'Updated Blog Post Title')]
     #[BodyParameter('content', description: 'The content of the post.', type: 'string', required: true, example: 'This is the updated content...')]
@@ -73,6 +83,11 @@ class PostController extends BaseApiController
         );
     }
 
+    /**
+     * Remove the specified post.
+     *
+     * @response array{success: bool, message: string}
+     */
     #[PathParameter('post', description: 'The post to delete.', type: 'integer', example: 1)]
     public function destroy(Post $post): JsonResponse
     {

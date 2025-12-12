@@ -36,6 +36,11 @@ class TagController extends BaseApiController
         return ['posts'];
     }
 
+    /**
+     * Store a newly created tag.
+     *
+     * @response array{success: bool, message: string, data: array{id: int, title: string, created_at: string, updated_at: string}}
+     */
     #[BodyParameter('title', description: 'The title of the tag. Must be unique.', type: 'string', required: true, example: 'Laravel')]
     public function store(TagData $data): JsonResponse
     {
@@ -47,6 +52,11 @@ class TagController extends BaseApiController
         );
     }
 
+    /**
+     * Update the specified tag.
+     *
+     * @response array{success: bool, message: string, data: array{id: int, title: string, created_at: string, updated_at: string}}
+     */
     #[PathParameter('tag', description: 'The tag to update.', type: 'integer', example: 1)]
     #[BodyParameter('title', description: 'The title of the tag. Must be unique.', type: 'string', required: true, example: 'PHP')]
     public function update(TagData $data, Tag $tag): JsonResponse
@@ -59,6 +69,11 @@ class TagController extends BaseApiController
         );
     }
 
+    /**
+     * Remove the specified tag.
+     *
+     * @response array{success: bool, message: string}
+     */
     #[PathParameter('tag', description: 'The tag to delete.', type: 'integer', example: 1)]
     public function destroy(Tag $tag): JsonResponse
     {

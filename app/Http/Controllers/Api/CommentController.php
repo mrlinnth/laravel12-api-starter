@@ -41,6 +41,11 @@ class CommentController extends BaseApiController
         return ['post', 'user'];
     }
 
+    /**
+     * Store a newly created comment.
+     *
+     * @response array{success: bool, message: string, data: array{id: int, post_id: int, content: string, user_id: int, deleted_at: string|null}}
+     */
     #[BodyParameter('content', description: 'The content of the comment.', type: 'string', required: true, example: 'This is a great post!')]
     #[BodyParameter('post_id', description: 'The ID of the post this comment belongs to.', type: 'integer', required: true, example: 1)]
     #[BodyParameter('user_id', description: 'The ID of the user creating the comment.', type: 'integer', required: true, example: 1)]
@@ -50,10 +55,15 @@ class CommentController extends BaseApiController
 
         return $this->createdResponse(
             new CommentResource($comment),
-            'Comment created successfully'
+            'Comment created successfully',
         );
     }
 
+    /**
+     * Update the specified comment.
+     *
+     * @response array{success: bool, message: string, data: array{id: int, post_id: int, content: string, user_id: int, deleted_at: string|null}}
+     */
     #[PathParameter('comment', description: 'The comment to update.', type: 'integer', example: 1)]
     #[BodyParameter('content', description: 'The content of the comment.', type: 'string', required: true, example: 'This is an updated comment!')]
     #[BodyParameter('post_id', description: 'The ID of the post this comment belongs to.', type: 'integer', required: true, example: 1)]
@@ -68,6 +78,11 @@ class CommentController extends BaseApiController
         );
     }
 
+    /**
+     * Remove the specified comment.
+     *
+     * @response array{success: bool, message: string}
+     */
     #[PathParameter('comment', description: 'The comment to delete.', type: 'integer', example: 1)]
     public function destroy(Comment $comment): JsonResponse
     {
