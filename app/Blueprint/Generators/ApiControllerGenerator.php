@@ -650,16 +650,16 @@ class ApiControllerGenerator implements Generator
             return "[]";
         }
 
-        $example = [];
+        $exampleKey = null;
         foreach ($model->columns() as $column) {
             $columnName = $column->name();
             if (Str::endsWith($columnName, '_id')) {
-                $example[$columnName] = 1;
+                $exampleKey = $columnName;
                 break;
             }
         }
 
-        return empty($example) ? "[]" : json_encode($example);
+        return $exampleKey ? "['{$exampleKey}' => 1]" : "[]";
     }
 
     /**
