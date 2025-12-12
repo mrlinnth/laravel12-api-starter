@@ -183,7 +183,7 @@ return [
         'job' => \Blueprint\Generators\Statements\JobGenerator::class,
         'mail' => \Blueprint\Generators\Statements\MailGenerator::class,
         'notification' => \Blueprint\Generators\Statements\NotificationGenerator::class,
-        'resource' => \Blueprint\Generators\Statements\ResourceGenerator::class,
+        'resource' => \App\Blueprint\Generators\ApiResourceGenerator::class,
         'view' => \Blueprint\Generators\Statements\ViewGenerator::class,
         'inertia_page' => \Blueprint\Generators\Statements\InertiaPageGenerator::class,
         'policy' => \Blueprint\Generators\PolicyGenerator::class,

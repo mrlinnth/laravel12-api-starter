@@ -1,57 +1,32 @@
 models:
+  Tag:
+    title: string:400 unique
+
   Post:
-    id
     title: string:400
     content: longtext
     status: enum:draft,published,archived
     user_id: id foreign
     published_at: nullable timestamp
-    softDeletes
-    timestamps
     relationships:
       hasMany: Comment
-      belongsToMany: Media
+      belongsToMany: Tag
       belongsTo: User
 
   Comment:
     post_id: id foreign
     content: longtext
     user_id: id foreign
-    deleted_at: nullable timestamp
+    softDeletes: true
     relationships:
       belongsTo: Post, User
 
-  Tag:
-    title: string:400 unique
-    relationships:
-      belongsToMany: Post      
-
-seeders: Post, Comment, Tag    
+seeders: Tag, Post, Comment
 
 controllers:
-# example controller with own methods
-  Post:
-    index:
-      query: all
-      render: post.index with:posts
-
-    store:
-      validate: title, content
-      save: post
-      send: ReviewNotification to:post.author with:post
-      dispatch: SyncMedia with:post
-      fire: NewPost with:post
-      flash: post.title
-      redirect: post.index
-
-    download:
-      find: post.id
-      respond: post      
-
-# example controller with 7 web resource methods (index, create, store, show, edit, update, destroy)
-  Comment:
-    resource: web 
-
-# example controller with 5 api resource methods (index, store, show, update, destroy)
   Api\Tag:
-    resource: api         
+    resource: api
+  Api\Post:
+    resource: api
+  Api\Comment:
+    resource: api
