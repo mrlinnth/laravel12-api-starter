@@ -11,12 +11,9 @@ done
 echo "Database is up - executing commands"
 
 # Run Laravel setup commands
-php artisan optimize:clear
 php artisan storage:link
 php artisan migrate --force
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
+php artisan optimize:clear
 
 # Fix permissions for Laravel directories
 chown -R www-data:www-data /var/www/html
